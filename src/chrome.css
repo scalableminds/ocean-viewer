@@ -1,0 +1,41 @@
+/**
+ * Hide Neuroglancer's built-in UI chrome.
+ *
+ * The Ocean Viewer is embedded and driven entirely by MyOcean via postMessage,
+ * so Neuroglancer's own controls (toolbar buttons, layer bar, per-panel
+ * buttons) are unwanted. We hide them with CSS rather than forking the source.
+ * Loaded after Neuroglancer's own stylesheet so these rules win; `!important`
+ * guards against Neuroglancer's inline/specificity.
+ *
+ * We deliberately KEEP the top row's position readout (`position-widget` and
+ * `mouse-position-widget` give the X/Y/Z coordinates) and only strip the
+ * interactive controls beside it.
+ */
+
+/* Top toolbar: hide the control buttons (settings, help, layer list, undo/redo,
+   screenshot, ...) and the tool palette, but keep the position widgets. */
+.neuroglancer-viewer-top-row > .neuroglancer-icon,
+.neuroglancer-viewer-top-row > .neuroglancer-tool-palette-button,
+.neuroglancer-viewer-top-row > .neuroglancer-annotation-tool-status {
+  display: none !important;
+}
+
+/* Layer bar: per-layer tabs and the "+" add-layer button. */
+.neuroglancer-layer-panel {
+  display: none !important;
+}
+
+/* Per-panel corner controls (maximize / change-layout buttons). */
+.neuroglancer-data-panel-layout-controls {
+  display: none !important;
+}
+
+/* Per-panel axis labels (the small "z y x" overlay in each panel corner). */
+.neuroglancer-display-dimensions-widget {
+  display: none !important;
+}
+
+/* The 3D perspective panel's "Sections" slice-view toggle. */
+.perspective-panel-show-slice-views {
+  display: none !important;
+}

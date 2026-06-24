@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ocean Viewer — dev parent harness</title>
+    <style>
+      body { font: 13px monospace; margin: 0; display: flex; height: 100vh; }
+      iframe { border: 0; flex: 1 1 auto; }
+      #panel { width: 360px; padding: 8px; overflow: auto; background: #111; color: #ddd; }
+      button { display: block; margin: 4px 0; width: 100%; }
+      pre { white-space: pre-wrap; word-break: break-all; }
+    </style>
+  </head>
+  <body>
+    <iframe id="vv" src="/"></iframe>
+    <div id="panel">
+      <button id="cfgFull">Send full CONFIG (layout=xy)</button>
+      <button id="cfgPartial">Send partial CONFIG (title only)</button>
+      <button id="mutate">Simulate user change (layout=3d)</button>
+      <div>iframe layout: <span id="layout">?</span></div>
+      <div>REPORTs received: <span id="count">0</span></div>
+      <pre id="log"></pre>
+    </div>
+    <script>
+      // This harness intentionally lives at the same origin as the viewer for
+      // local testing. It mirrors how MyOcean would drive the iframe.
+      const iframe = document.getElementById("vv");
+      const TARGET = "*"; // local dev only; MyOcean targets the real origin.
+      window.__results = { reports: [] };
+
+      window.addEventListener("message", (e) => {
+        if (e.data && e.data.source === "ocean-viewer") {
+          window.__results.reports.push(e.data);
+          document.getElementById("count").textContent = String(window.__results.reports.length);
+          document.getElementById("log").textContent =
+            JSON.stringify(e.data, null, 1).slice(0, 1200);
+        }
+      });
+
+      function send(state, mode) {
+        iframe.contentWindow.postMessage(
+          { source: "ocean-viewer", type: "CONFIG", state, mode },
+          TARGET,
+        );
+      }
+      window.__send = send;
+      window.__layout = () => iframe.contentWindow.viewer?.state?.toJSON?.().layout;
+      window.__mutate = () => {
+        const v = iframe.contentWindow.viewer;
+        const s = v.state.toJSON();
+        v.state.restoreState({ ...s, layout: "3d" });
+      };
+
+      document.getElementById("cfgFull").onclick = () => send({ layout: "xy" }, "full");
+      document.getElementById("cfgPartial").onclick = () =>
+        send({ title: "Ocean test" }, "partial");
+      document.getElementById("mutate").onclick = () => window.__mutate();
+    </script>
+  </body>
+</html>
