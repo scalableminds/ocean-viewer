@@ -1,20 +1,25 @@
 {
-  "name": "ocean-viewer",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Volumetric Viewer for the MyOcean Data Portal, built on Neuroglancer.",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "neuroglancer": "2.41.2"
-  },
-  "devDependencies": {
-    "typescript": "^6.0.3",
-    "vite": "^8.1.0"
-  }
+	"name": "ocean-viewer",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Volumetric Viewer for the MyOcean Data Portal, built on Neuroglancer.",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc --noEmit && vite build",
+		"preview": "vite preview",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome lint .",
+		"format": "biome format .",
+		"format:write": "biome format --write .",
+		"check": "biome check ."
+	},
+	"dependencies": {
+		"neuroglancer": "2.41.2"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.1",
+		"typescript": "^6.0.3",
+		"vite": "^8.1.0"
+	}
 }

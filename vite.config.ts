@@ -7,21 +7,21 @@ import { defineConfig } from "vite";
 // the `import.meta.url` worker references, so we exclude neuroglancer from pre-bundling
 // and let Rollup handle it in both dev and build.
 export default defineConfig({
-  worker: {
-    format: "es",
-  },
-  server: {
-    hmr: false,
-  },
-  build: {
-    target: "es2022",
-    sourcemap: true,
-  },
-  optimizeDeps: {
-    entries: [
-      "node_modules/neuroglancer/lib/main.bundle.js",
-      "node_modules/neuroglancer/lib/async_computation.bundle.js",
-      "node_modules/neuroglancer/lib/chunk_worker.bundle.js",
-    ],
-  },
+	worker: {
+		format: "es",
+	},
+	server: {
+		hmr: false,
+	},
+	build: {
+		target: "es2022",
+		sourcemap: true,
+	},
+	optimizeDeps: {
+		entries: [
+			"node_modules/neuroglancer/lib/main.bundle.js",
+			"node_modules/neuroglancer/lib/async_computation.bundle.js",
+			"node_modules/neuroglancer/lib/chunk_worker.bundle.js",
+		],
+	},
 });

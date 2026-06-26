@@ -17,25 +17,25 @@
 .neuroglancer-viewer-top-row > .neuroglancer-icon,
 .neuroglancer-viewer-top-row > .neuroglancer-tool-palette-button,
 .neuroglancer-viewer-top-row > .neuroglancer-annotation-tool-status {
-  display: none !important;
+	display: none !important;
 }
 
 /* Layer bar: per-layer tabs and the "+" add-layer button. */
 .neuroglancer-layer-panel {
-  display: none !important;
+	display: none !important;
 }
 
 /* Per-panel corner controls (maximize / change-layout buttons). */
 .neuroglancer-data-panel-layout-controls {
-  display: none !important;
+	display: none !important;
 }
 
 /* Per-panel axis labels (the small "z y x" overlay in each panel corner). */
 .neuroglancer-display-dimensions-widget {
-  display: none !important;
+	display: none !important;
 }
 
 /* The 3D perspective panel's "Sections" slice-view toggle. */
 .perspective-panel-show-slice-views {
-  display: none !important;
+	display: none !important;
 }

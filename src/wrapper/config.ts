@@ -22,49 +22,53 @@ import type { ConfigMessage, ViewerStateJson } from "../protocol.js";
 import { resolveStateColormaps } from "./colormaps.js";
 
 const PRESERVED_CAMERA_KEYS: ReadonlyArray<string> = [
-  "position",
-  "projectionOrientation",
-  "projectionScale",
-  "projectionDepth",
-  "crossSectionOrientation",
-  "crossSectionScale",
-  "crossSectionDepth",
+	"position",
+	"projectionOrientation",
+	"projectionScale",
+	"projectionDepth",
+	"crossSectionOrientation",
+	"crossSectionScale",
+	"crossSectionDepth",
 ];
 
 export class ConfigApplier {
-  /** Pristine default state captured before any config is applied. */
-  private readonly pristine: ViewerStateJson;
-  private hasReceivedFull = false;
+	/** Pristine default state captured before any config is applied. */
+	private readonly pristine: ViewerStateJson;
+	private hasReceivedFull = false;
 
-  constructor(private readonly viewer: Viewer) {
-    this.pristine = viewer.state.toJSON() as ViewerStateJson;
-  }
+	constructor(private readonly viewer: Viewer) {
+		this.pristine = viewer.state.toJSON() as ViewerStateJson;
+	}
 
-  apply(message: ConfigMessage): void {
-    const mode = message.mode ?? (this.hasReceivedFull ? "partial" : "full");
-    // Convert any `oceanColormap` layer fields into Neuroglancer `shader`s.
-    const state = resolveStateColormaps(message.state);
-    try {
-      if (mode === "full") {
-        this.viewer.state.restoreState({ ...this.pristine, ...state });
-        this.hasReceivedFull = true;
-      } else {
-        this.applyPartial(state);
-      }
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error("[ocean-viewer] failed to apply CONFIG", err, message.state);
-    }
-  }
+	apply(message: ConfigMessage): void {
+		const mode = message.mode ?? (this.hasReceivedFull ? "partial" : "full");
+		// Convert any `oceanColormap` layer fields into Neuroglancer `shader`s.
+		const state = resolveStateColormaps(message.state);
+		try {
+			if (mode === "full") {
+				this.viewer.state.restoreState({ ...this.pristine, ...state });
+				this.hasReceivedFull = true;
+			} else {
+				this.applyPartial(state);
+			}
+		} catch (err) {
+			// eslint-disable-next-line no-console
+			console.error(
+				"[ocean-viewer] failed to apply CONFIG",
+				err,
+				message.state,
+			);
+		}
+	}
 
-  private applyPartial(state: ViewerStateJson): void {
-    const current = this.viewer.state.toJSON() as ViewerStateJson;
-    const merged: ViewerStateJson = { ...state };
-    for (const key of PRESERVED_CAMERA_KEYS) {
-      if (!(key in state) && key in current) {
-        merged[key] = current[key];
-      }
-    }
-    this.viewer.state.restoreState(merged);
-  }
+	private applyPartial(state: ViewerStateJson): void {
+		const current = this.viewer.state.toJSON() as ViewerStateJson;
+		const merged: ViewerStateJson = { ...state };
+		for (const key of PRESERVED_CAMERA_KEYS) {
+			if (!(key in state) && key in current) {
+				merged[key] = current[key];
+			}
+		}
+		this.viewer.state.restoreState(merged);
+	}
 }

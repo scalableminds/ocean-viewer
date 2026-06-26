@@ -9,7 +9,10 @@
  * once and hand it to the config applier as an initial full state.
  */
 
-import { bindDefaultCopyHandler, bindDefaultPasteHandler } from "neuroglancer/unstable/ui/default_clipboard_handling.js";
+import {
+	bindDefaultCopyHandler,
+	bindDefaultPasteHandler,
+} from "neuroglancer/unstable/ui/default_clipboard_handling.js";
 import { setDefaultInputEventBindings } from "neuroglancer/unstable/ui/default_input_event_bindings.js";
 import { makeDefaultViewer } from "neuroglancer/unstable/ui/default_viewer.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
@@ -17,28 +20,28 @@ import type { Viewer } from "neuroglancer/unstable/viewer.js";
 import type { ViewerStateJson } from "../protocol.js";
 
 export function createViewer(target: HTMLElement): Viewer {
-  const viewer = makeDefaultViewer({
-    target,
-    // The viewer is driven externally by MyOcean via CONFIG. Disable the
-    // built-in "empty viewer" behaviour, which otherwise debounces and forces
-    // the layout back to "4panel-alt" and opens a new-layer dialog whenever no
-    // layers are present — clobbering programmatic / hash-seeded state.
-    resetStateWhenEmpty: false,
-    showLayerDialog: false,
-  });
-  setDefaultInputEventBindings(viewer.inputEventBindings);
-  bindDefaultCopyHandler(viewer);
-  bindDefaultPasteHandler(viewer);
+	const viewer = makeDefaultViewer({
+		target,
+		// The viewer is driven externally by MyOcean via CONFIG. Disable the
+		// built-in "empty viewer" behaviour, which otherwise debounces and forces
+		// the layout back to "4panel-alt" and opens a new-layer dialog whenever no
+		// layers are present — clobbering programmatic / hash-seeded state.
+		resetStateWhenEmpty: false,
+		showLayerDialog: false,
+	});
+	setDefaultInputEventBindings(viewer.inputEventBindings);
+	bindDefaultCopyHandler(viewer);
+	bindDefaultPasteHandler(viewer);
 
-  // Default the area outside the data (the slice / 3D background) to black.
-  // Set before the ConfigApplier captures the pristine state, so it persists
-  // across CONFIGs unless one explicitly overrides these colors.
-  viewer.state.restoreState({
-    crossSectionBackgroundColor: "#000000",
-    projectionBackgroundColor: "#000000",
-  });
+	// Default the area outside the data (the slice / 3D background) to black.
+	// Set before the ConfigApplier captures the pristine state, so it persists
+	// across CONFIGs unless one explicitly overrides these colors.
+	viewer.state.restoreState({
+		crossSectionBackgroundColor: "#000000",
+		projectionBackgroundColor: "#000000",
+	});
 
-  return viewer;
+	return viewer;
 }
 
 /**
@@ -47,33 +50,33 @@ export function createViewer(target: HTMLElement): Viewer {
  * fragment state.
  */
 export function parseHashState(hash: string): ViewerStateJson | undefined {
-  if (!hash.startsWith("#!")) {
-    return undefined;
-  }
-  const fragment = hash.slice(2);
-  if (fragment.length === 0) {
-    return undefined;
-  }
-  for (const candidate of [decodeURIComponentSafe(fragment), fragment]) {
-    if (candidate === undefined) continue;
-    try {
-      const parsed: unknown = JSON.parse(candidate);
-      if (typeof parsed === "object" && parsed !== null) {
-        return parsed as ViewerStateJson;
-      }
-    } catch {
-      // try next candidate
-    }
-  }
-  // eslint-disable-next-line no-console
-  console.warn("[ocean-viewer] could not parse #! hash state");
-  return undefined;
+	if (!hash.startsWith("#!")) {
+		return undefined;
+	}
+	const fragment = hash.slice(2);
+	if (fragment.length === 0) {
+		return undefined;
+	}
+	for (const candidate of [decodeURIComponentSafe(fragment), fragment]) {
+		if (candidate === undefined) continue;
+		try {
+			const parsed: unknown = JSON.parse(candidate);
+			if (typeof parsed === "object" && parsed !== null) {
+				return parsed as ViewerStateJson;
+			}
+		} catch {
+			// try next candidate
+		}
+	}
+	// eslint-disable-next-line no-console
+	console.warn("[ocean-viewer] could not parse #! hash state");
+	return undefined;
 }
 
 function decodeURIComponentSafe(s: string): string | undefined {
-  try {
-    return decodeURIComponent(s);
-  } catch {
-    return undefined;
-  }
+	try {
+		return decodeURIComponent(s);
+	} catch {
+		return undefined;
+	}
 }
