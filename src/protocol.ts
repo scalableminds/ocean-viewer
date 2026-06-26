@@ -17,13 +17,20 @@ export const PROTOCOL_SOURCE = "ocean-viewer" as const;
 /**
  * A Neuroglancer viewer-state JSON object (the `#!{...}` schema).
  *
- * Ocean Viewer extends it with one non-standard field on image layers:
- * `oceanColormap` — a named-colormap spec the wrapper resolves into the
- * layer's GLSL `shader` before handing the state to Neuroglancer. Shape:
- *   { colormap: "viridis" | "magma" | ... | <raw GLSL>,
- *     dataMin: number, dataMax: number,
- *     scale?: "linear" | "log", clamp?: boolean }
- * See `wrapper/colormaps.ts` (`ColormapSpec`, `resolveStateColormaps`).
+ * Ocean Viewer extends it with non-standard fields the wrapper consumes and
+ * strips before handing the state to Neuroglancer:
+ *
+ * - `oceanColormap` (on an image layer) — a named-colormap spec resolved into
+ *   the layer's GLSL `shader`. Shape:
+ *     { colormap: "viridis" | "magma" | ... | <raw GLSL>,
+ *       dataMin: number, dataMax: number,
+ *       scale?: "linear" | "log", clamp?: boolean }
+ *   See `wrapper/colormaps.ts` (`ColormapSpec`, `resolveStateColormaps`).
+ *
+ * - `oceanAxisUnits` (top-level) — a `{ dimensionName: unitString }` map used to
+ *   label the X/Y/Z position readouts (e.g. `{ "x": "°E", "y": "°N", "z": "m" }`).
+ *   Needed because Neuroglancer's coordinate-space units are SI-only and reject
+ *   `"°"`. See `wrapper/units.ts` (`setAxisUnits`).
  */
 export type ViewerStateJson = Record<string, unknown>;
 

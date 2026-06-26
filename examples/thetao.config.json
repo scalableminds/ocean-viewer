@@ -1,6 +1,7 @@
 {
 	"_comment": "Example Ocean Viewer CONFIG message payload (the `state` field of a CONFIG). Demonstrates: zarr v2 source via the `url|zarr2:` kvstore syntax; a `transform` that inverts the x and y source axes for correct geographic orientation; and the `oceanColormap` extension (resolved by the wrapper into the layer `shader`). Based on CMEMS MEDSEA sea-water potential temperature (thetao).",
 	"dimensions": { "z": [1, ""], "y": [1, ""], "x": [1, ""] },
+	"oceanAxisUnits": { "x": "°E", "y": "°N", "z": "m" },
 	"position": [0.5, -209, -629],
 	"crossSectionScale": 0.85,
 	"layout": "4panel-alt",

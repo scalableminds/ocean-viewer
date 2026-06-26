@@ -6,6 +6,7 @@ import { Bridge } from "./wrapper/bridge.js";
 import { resolveShader } from "./wrapper/colormaps.js";
 import { ConfigApplier } from "./wrapper/config.js";
 import { Reporter } from "./wrapper/report.js";
+import { installUnitLabels } from "./wrapper/units.js";
 import { createViewer, parseHashState } from "./wrapper/viewer.js";
 
 // Loaded last so these rules override Neuroglancer's own stylesheet.
@@ -26,6 +27,7 @@ function bootstrap(): void {
 	}
 
 	const viewer = createViewer(target);
+	installUnitLabels(viewer);
 	// Expose for debugging / automation (parity with Neuroglancer's default setup).
 	(window as unknown as { viewer: unknown; oceanViewer: unknown }).viewer =
 		viewer;

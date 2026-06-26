@@ -20,6 +20,7 @@ import type { Viewer } from "neuroglancer/unstable/viewer.js";
 
 import type { ConfigMessage, ViewerStateJson } from "../protocol.js";
 import { resolveStateColormaps } from "./colormaps.js";
+import { setAxisUnits } from "./units.js";
 
 const PRESERVED_CAMERA_KEYS: ReadonlyArray<string> = [
 	"position",
@@ -42,8 +43,18 @@ export class ConfigApplier {
 
 	apply(message: ConfigMessage): void {
 		const mode = message.mode ?? (this.hasReceivedFull ? "partial" : "full");
+		// Pull off the Ocean Viewer extensions Neuroglancer doesn't understand:
+		// `oceanAxisUnits` (X/Y/Z readout unit labels) is applied out-of-band and
+		// stripped so it never reaches `restoreState`. Only updated when present,
+		// so partial CONFIGs that omit it keep the current units.
+		const { oceanAxisUnits, ...rawState } = message.state as ViewerStateJson & {
+			oceanAxisUnits?: Record<string, string>;
+		};
+		if (oceanAxisUnits !== undefined) {
+			setAxisUnits(oceanAxisUnits);
+		}
 		// Convert any `oceanColormap` layer fields into Neuroglancer `shader`s.
-		const state = resolveStateColormaps(message.state);
+		const state = resolveStateColormaps(rawState);
 		try {
 			if (mode === "full") {
 				this.viewer.state.restoreState({ ...this.pristine, ...state });

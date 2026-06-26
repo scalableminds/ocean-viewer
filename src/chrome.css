@@ -39,3 +39,13 @@
 .perspective-panel-show-slice-views {
 	display: none !important;
 }
+
+/* Physical-unit suffix appended after each X/Y/Z coordinate readout
+   (injected by wrapper/units.ts from the coordinate space's units). */
+.ocean-unit-label {
+	margin: 0 0.5ch 0 0.2ch;
+	color: #9aa0a6;
+	font-size: 0.9em;
+	pointer-events: none;
+	white-space: pre;
+}

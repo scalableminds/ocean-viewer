@@ -63,6 +63,20 @@ the wrapper resolves into the layer `shader`:
 enables logarithmic rendering; `clamp` clamps to `[dataMin, dataMax]`; missing
 (`NaN`) voxels render black.
 
+## Axis units
+
+The X/Y/Z position readout is labelled with physical units supplied via the
+top-level CONFIG field `oceanAxisUnits` (a dimension-name → unit map):
+
+```json
+"oceanAxisUnits": { "x": "°E", "y": "°N", "z": "m" }
+```
+
+This is an Ocean Viewer extension (resolved in [src/wrapper/units.ts](src/wrapper/units.ts))
+rather than Neuroglancer coordinate-space units, because Neuroglancer's units
+are SI-only and reject strings like `"°"`. The labels are matched by dimension
+name and re-applied when the coordinate space changes.
+
 See [examples/thetao.config.json](examples/thetao.config.json) for a complete,
 working CONFIG payload, and [dev-parent.html](dev-parent.html) for a local
 parent-page harness.
