@@ -78,5 +78,7 @@ are SI-only and reject strings like `"°"`. The labels are matched by dimension
 name and re-applied when the coordinate space changes.
 
 See [examples/thetao.config.json](examples/thetao.config.json) for a complete,
-working CONFIG payload, and [dev-parent.html](dev-parent.html) for a local
-parent-page harness.
+working CONFIG payload, and [dev-parent.html](dev-parent.html) for a minimal
+local parent-page harness. For a richer, interactive parent mock — a layer
+panel with visibility / opacity / colour map / min-max controls that drives the
+iframe — see [my-ocean-mock/](my-ocean-mock/README.md).

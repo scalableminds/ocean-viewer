@@ -9,7 +9,7 @@
  * On top of the colormap we support, per the spec:
  *   - logarithmic scaling   (`scale: "log"`)
  *   - value clamping        (`clamp: true`)
- *   - null / missing voxels rendered black (NaN fill values → black)
+ *   - null / missing voxels rendered transparent (NaN, CMEMS fill, sentinel)
  *
  * Named colormaps are implemented as compact GLSL polynomial approximations
  * (Neuroglancer only ships `colormapJet`/`colormapCubehelix` natively, so
@@ -38,6 +38,12 @@ export interface ColormapSpec {
 	scale?: "linear" | "log";
 	/** Clamp out-of-range values to the endpoints (default true). */
 	clamp?: boolean;
+	/**
+	 * Explicit no-data sentinel (e.g. CMEMS bathymetry's `-32767`). Voxels equal
+	 * to it render transparent. NaN and the CMEMS default fill (~9.969e36) are
+	 * always treated as missing without needing this.
+	 */
+	noDataValue?: number;
 }
 
 /** GLSL `vec3 <name>(float t)` polynomial colormap definitions. */
@@ -129,14 +135,22 @@ export function resolveShader(spec: ColormapSpec): string {
 
 	// For log scale, non-positive values are undefined → treat as missing.
 	const logGuard = log
-		? `\n      if (value <= 0.0) { emitRGB(vec3(0.0)); return; }`
+		? `\n  if (value <= 0.0) { emitTransparent(); return; }`
 		: "";
-	const clampLine = clamp ? `\n      t = clamp(t, 0.0, 1.0);` : "";
+	const clampLine = clamp ? `\n  t = clamp(t, 0.0, 1.0);` : "";
+	// Explicit no-data sentinel (e.g. CMEMS bathymetry's -32767) → transparent.
+	const fillGuard =
+		spec.noDataValue !== undefined
+			? `\n  if (value == ${glslFloat(spec.noDataValue)}) { emitTransparent(); return; }`
+			: "";
 
+	// Missing voxels render transparent (not black) so lower layers and the page
+	// background show through where a layer has no data (land, fill values).
 	return `${COLORMAP_GLSL[name]}
 void main() {
   float value = getDataValue();
-  if (value != value) { emitRGB(vec3(0.0)); return; }${logGuard}
+  if (value != value) { emitTransparent(); return; }
+  if (abs(value) > 1e30) { emitTransparent(); return; }${fillGuard}${logGuard}
   ${norm}${clampLine}
   emitRGB(cmap(t));
 }`;

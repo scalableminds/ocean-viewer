@@ -1,0 +1,282 @@
+:root {
+	--blue: #2a3b8f;
+	--blue-bright: #1a73e8;
+	--cyan: #aef3ff;
+	--card-bg: #ffffff;
+	--panel-bg: #f4f5f7;
+	--text: #1c1c21;
+	--text-dim: #9a9aa5;
+	--border: #e3e4e8;
+	--settings-bg: #e9ebef;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+	margin: 0;
+	height: 100%;
+}
+
+body {
+	font-family:
+		system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	color: var(--text);
+}
+
+.app {
+	display: flex;
+	height: 100vh;
+	width: 100vw;
+	overflow: hidden;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+	width: 400px;
+	flex: 0 0 400px;
+	background: var(--panel-bg);
+	border-right: 1px solid var(--border);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.sidebar-header {
+	background: var(--blue);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 18px;
+	border-left: 8px solid var(--cyan);
+}
+
+.add-layer {
+	background: none;
+	border: none;
+	color: #fff;
+	font-size: 18px;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	cursor: default;
+}
+
+.add-layer .plus {
+	font-size: 26px;
+	font-weight: 400;
+	line-height: 1;
+}
+
+.header-icons {
+	display: flex;
+	gap: 14px;
+	font-size: 16px;
+	opacity: 0.95;
+}
+
+.layer-list {
+	flex: 1 1 auto;
+	overflow-y: auto;
+}
+
+/* ---- Layer card ---- */
+.layer-card {
+	background: var(--card-bg);
+	border-bottom: 1px solid var(--border);
+	padding: 16px 18px 14px;
+}
+
+.layer-card.is-hidden .layer-titles,
+.layer-card.is-hidden .colorbar {
+	opacity: 0.55;
+}
+
+.layer-head {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+}
+
+.eye {
+	background: none;
+	border: none;
+	padding: 2px;
+	cursor: pointer;
+	color: var(--text-dim);
+	flex: 0 0 auto;
+	margin-top: 2px;
+}
+
+.eye.on {
+	color: var(--blue-bright);
+}
+
+.layer-titles {
+	min-width: 0;
+}
+
+.layer-title {
+	font-size: 17px;
+	font-weight: 700;
+	line-height: 1.25;
+}
+
+.layer-short {
+	color: var(--text-dim);
+	font-weight: 600;
+}
+
+.layer-subtitle {
+	color: var(--text-dim);
+	font-size: 13px;
+	margin-top: 3px;
+}
+
+/* ---- Colour bar ---- */
+.colorbar {
+	margin: 12px 0 10px;
+}
+
+.colorbar-gradient {
+	height: 12px;
+	border-radius: 2px;
+}
+
+.colorbar-ticks {
+	display: flex;
+	justify-content: space-between;
+	font-size: 12px;
+	color: #4a4a52;
+	margin-top: 4px;
+}
+
+/* ---- Action row ---- */
+.layer-actions {
+	display: flex;
+	align-items: center;
+	gap: 18px;
+	color: #3a3a42;
+	margin-top: 4px;
+}
+
+.action {
+	background: none;
+	border: none;
+	padding: 2px;
+	cursor: pointer;
+	color: inherit;
+	display: inline-flex;
+	align-items: center;
+}
+
+.action.active {
+	color: var(--blue-bright);
+}
+
+.action.log {
+	font-size: 15px;
+	font-weight: 600;
+}
+
+/* ---- Settings ---- */
+.layer-settings {
+	background: var(--settings-bg);
+	margin: 14px -18px -14px;
+	padding: 16px 18px 18px;
+	border-top: 1px solid var(--border);
+}
+
+.setting-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.setting-row > label,
+.setting-label {
+	font-weight: 600;
+	font-size: 15px;
+	flex: 0 0 90px;
+}
+
+.setting-row input[type="range"] {
+	flex: 1 1 auto;
+	accent-color: var(--blue-bright);
+}
+
+.colmap-row {
+	align-items: flex-start;
+}
+
+.colmap-grid {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 6px;
+	flex: 1 1 auto;
+}
+
+.swatch {
+	height: 24px;
+	border: 2px solid transparent;
+	border-radius: 3px;
+	cursor: pointer;
+	padding: 0;
+}
+
+.swatch.selected {
+	border-color: var(--blue-bright);
+	box-shadow: 0 0 0 1px var(--blue-bright);
+}
+
+.minmax-row {
+	gap: 16px;
+	margin-bottom: 0;
+}
+
+.minmax-row label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-weight: 600;
+	flex: 1 1 auto;
+}
+
+.minmax-row input[type="number"] {
+	flex: 1 1 auto;
+	width: 100%;
+	padding: 6px 8px;
+	border: 1px solid #c8c9cf;
+	border-radius: 4px;
+	font: inherit;
+}
+
+/* ---- Click readout ---- */
+.click-readout {
+	padding: 8px 18px;
+	font-size: 12px;
+	font-family: ui-monospace, monospace;
+	background: #fff;
+	border-top: 1px solid var(--border);
+	color: #3a3a42;
+}
+
+/* ---- Viewer ---- */
+.viewer {
+	flex: 1 1 auto;
+	position: relative;
+	background: #0b1020;
+}
+
+.viewer-frame {
+	border: 0;
+	width: 100%;
+	height: 100%;
+	display: block;
+}

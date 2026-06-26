@@ -41,6 +41,9 @@ export function createViewer(target: HTMLElement): Viewer {
 		projectionBackgroundColor: "#000000",
 	});
 
+	// @ts-expect-error: Expose the viewer globally for debugging
+	window.viewer = viewer
+	
 	return viewer;
 }
 
