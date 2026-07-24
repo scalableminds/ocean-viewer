@@ -10,7 +10,9 @@ export function App() {
 	const [clickInfo, setClickInfo] = useState<string | null>(null);
 
 	const patchLayer = (id: string, patch: Partial<Layer>) => {
-		setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+		setLayers((prev) =>
+			prev.map((l) => (l.id === id ? { ...l, ...patch } : l)),
+		);
 	};
 
 	return (

@@ -1,84 +1,34 @@
 # Ocean Viewer
 
-A **Volumetric Viewer** for the MyOcean Data Portal, built on
-[Neuroglancer](https://github.com/google/neuroglancer) and embedded as an
-`<iframe>`. The portal drives the viewer and reads back state/clicks over
-`postMessage()`.
+An npm-workspaces monorepo with two apps:
+
+| App | What it is |
+|---|---|
+| [apps/ocean-viewer](apps/ocean-viewer/README.md) | A **Volumetric Viewer** for the MyOcean Data Portal, built on [Neuroglancer](https://github.com/google/neuroglancer) and embedded as an `<iframe>`. |
+| [apps/my-ocean-mock](apps/my-ocean-mock/README.md) | A React mock of the MyOcean Data Portal parent page, for local development of the viewer's CONFIG protocol. |
+
+The two only talk to each other at runtime, over `postMessage` through an
+iframe — see each app's own README for details.
 
 ## Setup
 
+One install covers both apps:
+
 ```sh
 npm install
-npm run dev        # dev server at http://localhost:5174
-npm run build      # production build
-npm run preview    # serve the production build
-npm run typecheck
 ```
 
-## Architecture
+> **npm install note.** If a global `~/.npmrc` sets `min-release-age`, one of
+> Neuroglancer's transitive dependencies (a git-pinned commit) will fail to
+> install. Work around it with an empty user config:
+> `npm install --userconfig /dev/null`.
 
-A thin TypeScript wrapper around the `neuroglancer` npm package:
+## Run
 
-| File | Role |
-|---|---|
-| [src/main.ts](src/main.ts) | Bootstrap: create viewer, seed `#!` hash, attach bridge |
-| [src/wrapper/viewer.ts](src/wrapper/viewer.ts) | Create the Neuroglancer viewer (no live URL binding) |
-| [src/wrapper/bridge.ts](src/wrapper/bridge.ts) | Origin-restricted `postMessage` in/out |
-| [src/wrapper/config.ts](src/wrapper/config.ts) | Apply CONFIG (full replace / partial merge) |
-| [src/wrapper/report.ts](src/wrapper/report.ts) | Debounced REPORT of viewer state |
-| [src/wrapper/colormaps.ts](src/wrapper/colormaps.ts) | Named colormap → GLSL shader resolver |
-| [src/protocol.ts](src/protocol.ts) | CONFIG / REPORT / CLICK message contract |
-| [src/chrome.css](src/chrome.css) | Hides Neuroglancer's built-in UI chrome (CSS-only) |
-
-## Parent ↔ iframe protocol
-
-- **CONFIG** (inbound): a Neuroglancer state JSON. First message is a full state;
-  later messages are partial updates merged onto the current state, preserving
-  camera position/orientation unless explicitly included.
-- **REPORT** (outbound): debounced serialised state after user interaction.
-- **CLICK** (outbound): world coordinates converted to geographic lon/lat/depth.
-
-Set the allowed parent origin at build time via `VITE_PARENT_ORIGIN`; otherwise
-the bridge locks onto the first valid sender.
-
-## Data sources
-
-Zarr (v2/v3, OME-Zarr) via the kvstore syntax `https://…/array/|zarr2:`, and
-`precomputed://` for cloud-hosted segmentation. Plain Zarr has no spatial
-metadata, so supply axis order/orientation via the layer `source.transform`
-(e.g. invert x and y — see the example).
-
-## Colormaps
-
-Image layers may carry an `oceanColormap` field (an Ocean Viewer extension) that
-the wrapper resolves into the layer `shader`:
-
-```json
-"oceanColormap": { "colormap": "viridis", "dataMin": 10, "dataMax": 20,
-                   "scale": "log", "clamp": true }
+```sh
+npm run dev -w ocean-viewer    # http://localhost:5174
+npm run dev -w my-ocean-mock   # http://localhost:5180 (separate terminal)
 ```
 
-`colormap` is a named map (`viridis`, `magma`, `plasma`, `inferno`, `turbo`,
-`jet`, `grayscale`) or a raw GLSL shader string (passed through). `scale: "log"`
-enables logarithmic rendering; `clamp` clamps to `[dataMin, dataMax]`; missing
-(`NaN`) voxels render black.
-
-## Axis units
-
-The X/Y/Z position readout is labelled with physical units supplied via the
-top-level CONFIG field `oceanAxisUnits` (a dimension-name → unit map):
-
-```json
-"oceanAxisUnits": { "x": "°E", "y": "°N", "z": "m" }
-```
-
-This is an Ocean Viewer extension (resolved in [src/wrapper/units.ts](src/wrapper/units.ts))
-rather than Neuroglancer coordinate-space units, because Neuroglancer's units
-are SI-only and reject strings like `"°"`. The labels are matched by dimension
-name and re-applied when the coordinate space changes.
-
-See [examples/thetao.config.json](examples/thetao.config.json) for a complete,
-working CONFIG payload, and [dev-parent.html](dev-parent.html) for a minimal
-local parent-page harness. For a richer, interactive parent mock — a layer
-panel with visibility / opacity / colour map / min-max controls that drives the
-iframe — see [my-ocean-mock/](my-ocean-mock/README.md).
+Other useful root-level scripts (fan out to both apps): `npm run typecheck`,
+`npm run build`, `npm run check` (Biome lint + format).

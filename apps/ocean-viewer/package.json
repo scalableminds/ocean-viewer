@@ -1,0 +1,19 @@
+{
+	"name": "ocean-viewer",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Volumetric Viewer for the MyOcean Data Portal, built on Neuroglancer.",
+	"scripts": {
+		"dev": "vite --port 5174",
+		"build": "tsc --noEmit && vite build",
+		"preview": "vite preview",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"neuroglancer": "2.41.2"
+	},
+	"devDependencies": {
+		"@types/node": "^26.1.1"
+	}
+}

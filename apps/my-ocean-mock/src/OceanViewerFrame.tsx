@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
 	buildFullState,
 	type ConfigMessage,
@@ -8,7 +8,7 @@ import {
 import type { Layer } from "./types";
 
 /** Ocean Viewer dev-server URL. Override via VITE_VIEWER_URL. */
-const VIEWER_URL = import.meta.env.VITE_VIEWER_URL ?? "http://localhost:5173/";
+const VIEWER_URL = import.meta.env.VITE_VIEWER_URL ?? "http://localhost:5174/";
 
 /**
  * Camera fields carried over from the viewer's own REPORTs so layer edits don't
@@ -29,7 +29,11 @@ const CAMERA_KEYS = [
 interface Props {
 	layers: Layer[];
 	/** Called with the geographic coordinate of a click in the viewer. */
-	onClick?: (geo: { longitude: number; latitude: number; depth: number }) => void;
+	onClick?: (geo: {
+		longitude: number;
+		latitude: number;
+		depth: number;
+	}) => void;
 }
 
 /**
@@ -52,14 +56,17 @@ export function OceanViewerFrame({ layers, onClick }: Props) {
 	const layersRef = useRef(layers);
 	layersRef.current = layers;
 
-	const post = (message: Omit<ConfigMessage, "source">) => {
+	// Stable identity (only reads refs) so the effect below can list it as a
+	// dependency without re-firing on every render.
+	const post = useCallback((message: Omit<ConfigMessage, "source">) => {
 		const win = iframeRef.current?.contentWindow;
 		if (!win) return;
 		win.postMessage({ source: PROTOCOL_SOURCE, ...message }, "*");
-	};
+	}, []);
 
 	// Full state for the current layers, with the user's last camera grafted on.
-	const composeState = (layerList: Layer[]): ViewerStateJson => {
+	// Stable identity (only reads refs/module constants), same reason as `post`.
+	const composeState = useCallback((layerList: Layer[]): ViewerStateJson => {
 		const state = buildFullState(layerList);
 		const camera = cameraRef.current;
 		if (camera) {
@@ -68,7 +75,7 @@ export function OceanViewerFrame({ layers, onClick }: Props) {
 			}
 		}
 		return state;
-	};
+	}, []);
 
 	// Send the initial state once the iframe document has loaded. A short delay
 	// lets the viewer's bootstrap attach its postMessage bridge before we send.
@@ -76,7 +83,11 @@ export function OceanViewerFrame({ layers, onClick }: Props) {
 		readyRef.current = false;
 		cameraRef.current = null;
 		window.setTimeout(() => {
-			post({ type: "CONFIG", state: composeState(layersRef.current), mode: "full" });
+			post({
+				type: "CONFIG",
+				state: composeState(layersRef.current),
+				mode: "full",
+			});
 			readyRef.current = true;
 		}, 250);
 	};
@@ -85,7 +96,7 @@ export function OceanViewerFrame({ layers, onClick }: Props) {
 	useEffect(() => {
 		if (!readyRef.current) return;
 		post({ type: "CONFIG", state: composeState(layers), mode: "full" });
-	}, [layers]);
+	}, [layers, composeState, post]);
 
 	// Surface REPORT/CLICK messages coming back from the viewer.
 	useEffect(() => {

@@ -23,7 +23,6 @@ const HI = 1 / 12; // 0.083° grid step (deptho, thetao)
 const LO = 0.25; // 0.25° grid step (chl)
 
 const ROOT = "https://s3.waw3-1.cloudferro.com";
-							
 
 const DEPTHO_URL = `${ROOT}/mdl-arco-time-015/arco/GLOBAL_ANALYSISFORECAST_WAV_001_027/cmems_mod_wav_anfc_0.083deg_static_202211--ext--bathy/static.zarr/deptho/|zarr2:`;
 // const THETAO_URL = `${ROOT}/mdl-arco-geo-012/arco/GLOBAL_ANALYSISFORECAST_PHY_001_024/cmems_mod_glo_phy-thetao_anfc_0.083deg_P1D-m_202406/geoChunked.zarr/thetao/|zarr2:`;

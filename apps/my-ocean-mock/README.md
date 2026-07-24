@@ -3,8 +3,7 @@
 A minimal React mock of the **MyOcean Data Portal** parent app. It reproduces
 the portal's layer-selection sidebar and embeds the Ocean Viewer in an
 `<iframe>`, driving it over `postMessage` exactly as the real portal would. Use
-it as a richer, interactive alternative to [`dev-parent.html`](../dev-parent.html)
-when developing the viewer's CONFIG handling.
+it as an interactive harness when developing the viewer's CONFIG handling.
 
 ## What it does
 
@@ -25,15 +24,14 @@ extension) lives in [src/protocol.ts](src/protocol.ts).
 
 ## Run
 
-The viewer dev server must be running first (it's the iframe target):
+The viewer dev server must be running first (it's the iframe target). Both apps
+share one install at the repo root:
 
 ```sh
 # in the repo root
-npm run dev                 # Ocean Viewer at http://localhost:5174
-
-# in my-ocean-mock/
 npm install                 # see note below if it errors
-npm run dev                 # mock portal at http://localhost:5180
+npm run dev -w ocean-viewer   # Ocean Viewer at http://localhost:5174
+npm run dev -w my-ocean-mock  # mock portal at http://localhost:5180 (separate terminal)
 ```
 
 Open http://localhost:5180. Point the iframe elsewhere with

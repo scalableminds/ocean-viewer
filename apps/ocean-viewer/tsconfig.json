@@ -1,0 +1,11 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
+		"types": ["vite/client", "node"],
+		"esModuleInterop": true,
+		"verbatimModuleSyntax": true,
+		"forceConsistentCasingInFileNames": true
+	},
+	"include": ["src", "vite.config.ts"]
+}
