@@ -42,8 +42,8 @@ export function createViewer(target: HTMLElement): Viewer {
 	});
 
 	// @ts-expect-error: Expose the viewer globally for debugging
-	window.viewer = viewer
-	
+	window.viewer = viewer;
+
 	return viewer;
 }
 

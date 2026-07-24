@@ -16,35 +16,13 @@
  * viridis/magma/plasma/inferno/turbo are provided here).
  */
 
-import type { ViewerStateJson } from "../protocol.js";
+import type {
+	ColormapName,
+	ColormapSpec,
+	ViewerStateJson,
+} from "../protocol.js";
 
-export type ColormapName =
-	| "viridis"
-	| "magma"
-	| "plasma"
-	| "inferno"
-	| "turbo"
-	| "jet"
-	| "grayscale";
-
-export interface ColormapSpec {
-	/** Named colormap, or a raw GLSL shader string (detected by content). */
-	colormap: ColormapName | string;
-	/** Data value mapped to colormap 0.0. */
-	dataMin: number;
-	/** Data value mapped to colormap 1.0. */
-	dataMax: number;
-	/** Linear (default) or logarithmic normalisation. */
-	scale?: "linear" | "log";
-	/** Clamp out-of-range values to the endpoints (default true). */
-	clamp?: boolean;
-	/**
-	 * Explicit no-data sentinel (e.g. CMEMS bathymetry's `-32767`). Voxels equal
-	 * to it render transparent. NaN and the CMEMS default fill (~9.969e36) are
-	 * always treated as missing without needing this.
-	 */
-	noDataValue?: number;
-}
+export type { ColormapName, ColormapSpec };
 
 /** GLSL `vec3 <name>(float t)` polynomial colormap definitions. */
 const COLORMAP_GLSL: Record<ColormapName, string> = {

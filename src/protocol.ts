@@ -14,25 +14,143 @@
 /** Marker identifying messages belonging to the Ocean Viewer protocol. */
 export const PROTOCOL_SOURCE = "ocean-viewer" as const;
 
+/** Named colormaps implemented by `wrapper/colormaps.ts`'s GLSL resolver. */
+export type ColormapName =
+	| "viridis"
+	| "magma"
+	| "plasma"
+	| "inferno"
+	| "turbo"
+	| "jet"
+	| "grayscale";
+
 /**
- * A Neuroglancer viewer-state JSON object (the `#!{...}` schema).
- *
- * Ocean Viewer extends it with non-standard fields the wrapper consumes and
- * strips before handing the state to Neuroglancer:
- *
- * - `oceanColormap` (on an image layer) — a named-colormap spec resolved into
- *   the layer's GLSL `shader`. Shape:
- *     { colormap: "viridis" | "magma" | ... | <raw GLSL>,
- *       dataMin: number, dataMax: number,
- *       scale?: "linear" | "log", clamp?: boolean }
- *   See `wrapper/colormaps.ts` (`ColormapSpec`, `resolveStateColormaps`).
- *
- * - `oceanAxisUnits` (top-level) — a `{ dimensionName: unitString }` map used to
- *   label the X/Y/Z position readouts (e.g. `{ "x": "°E", "y": "°N", "z": "m" }`).
- *   Needed because Neuroglancer's coordinate-space units are SI-only and reject
- *   `"°"`. See `wrapper/units.ts` (`setAxisUnits`).
+ * The Data Portal's colormap extension for an image layer (`oceanColormap`),
+ * resolved into a Neuroglancer `shader` by `wrapper/colormaps.ts`'s
+ * `resolveShader` / `resolveStateColormaps`.
  */
-export type ViewerStateJson = Record<string, unknown>;
+export interface ColormapSpec {
+	/** Named colormap, or a raw GLSL shader string (detected by content). */
+	colormap: ColormapName | string;
+	/** Data value mapped to colormap 0.0. */
+	dataMin: number;
+	/** Data value mapped to colormap 1.0. */
+	dataMax: number;
+	/** Linear (default) or logarithmic normalisation. */
+	scale?: "linear" | "log";
+	/** Clamp out-of-range values to the endpoints (default true). */
+	clamp?: boolean;
+	/**
+	 * Explicit no-data sentinel (e.g. CMEMS bathymetry's `-32767`). Voxels equal
+	 * to it render transparent. NaN and the CMEMS default fill (~9.969e36) are
+	 * always treated as missing without needing this. Checked against the RAW
+	 * stored value, before any scale/offset is applied.
+	 */
+	noDataValue?: number;
+	/**
+	 * CF packing: physical value = raw * `scaleFactor` + `addOffset`. Needed for
+	 * CMEMS int16-packed arrays, since Neuroglancer reads the raw stored integer
+	 * and does not apply `scale_factor`/`add_offset`. Defaults: 1 / 0 (identity),
+	 * so float32 layers with real physical values are unaffected.
+	 */
+	scaleFactor?: number;
+	addOffset?: number;
+}
+
+/**
+ * One entry in a Neuroglancer viewer state's `layers` array.
+ *
+ * Only the handful of fields Ocean Viewer reads or writes directly are typed
+ * here. Neuroglancer layers are a polymorphic family (image/segmentation/
+ * annotation/mesh/...) with many per-type fields not modelled — see the docs
+ * linked on {@link NeuroglancerViewerStateJson}. Unlike that type, this one
+ * keeps a catch-all index signature: layer shape varies by `type` far more
+ * than we model, and without it, spreading a layer (`{ ...layer, ... }`, as
+ * `resolveStateColormaps` does) would silently drop those fields from the
+ * result's *type* even though they're still present on the actual object.
+ */
+export interface NeuroglancerLayerJson {
+	type?: string;
+	name?: string;
+	visible?: boolean;
+	source?: unknown;
+	/** GLSL fragment shader source (image/volume layers). */
+	shader?: string;
+	/**
+	 * Ocean Viewer extension: resolved into `shader` and stripped before the
+	 * state reaches Neuroglancer. See `resolveStateColormaps` in
+	 * `wrapper/colormaps.ts`.
+	 */
+	oceanColormap?: ColormapSpec;
+	[key: string]: unknown;
+}
+
+/** One of Neuroglancer's built-in multi-panel data panel layouts. */
+export type DataPanelLayoutType =
+	| "4panel-alt"
+	| "4panel"
+	| "xy"
+	| "xz"
+	| "yz"
+	| "3d"
+	| "xy-3d"
+	| "xz-3d"
+	| "yz-3d";
+
+/**
+ * The Neuroglancer viewer-state JSON schema (the `#!{...}` format), hand-typed
+ * from Neuroglancer's JSON API docs:
+ * https://neuroglancer-docs.web.app/json/api/index.html
+ *
+ * Neuroglancer's own npm package doesn't export this as a type — its state is
+ * `any` end-to-end (see `Trackable`/`CompoundTrackable.toJSON()` in
+ * `neuroglancer/util/trackable`), so this is derived from the docs above
+ * rather than imported. It's a best-effort, non-exhaustive model of the
+ * top-level fields (deeper per-layer-type shapes are intentionally left to
+ * {@link NeuroglancerLayerJson}'s index signature) — but unlike that type,
+ * this one has no catch-all index signature of its own. The top-level schema
+ * is small enough to enumerate, so a field this doesn't cover yet should be a
+ * compile error at the point of use, not a silently-typed `unknown` — add it
+ * here when that happens.
+ */
+export interface NeuroglancerViewerStateJson {
+	dimensions?: Record<string, [scale: number, unit: string]>;
+	relativeDisplayScales?: number[];
+	displayDimensions?: string[];
+	position?: number[];
+	crossSectionOrientation?: [number, number, number, number];
+	crossSectionScale?: number;
+	crossSectionDepth?: number;
+	projectionOrientation?: [number, number, number, number];
+	projectionScale?: number;
+	projectionDepth?: number;
+	layers?: NeuroglancerLayerJson[];
+	layout?: DataPanelLayoutType | Record<string, unknown>;
+	showAxisLines?: boolean;
+	wireFrame?: boolean;
+	showScaleBar?: boolean;
+	showDefaultAnnotations?: boolean;
+	showSlices?: boolean;
+	hideCrossSectionBackground3D?: boolean;
+	gpuMemoryLimit?: number;
+	systemMemoryLimit?: number;
+	concurrentDownloads?: number;
+	prefetch?: boolean;
+	title?: string;
+}
+
+/**
+ * Viewer state as exchanged over the Ocean Viewer protocol: Neuroglancer's
+ * schema (above) plus the Ocean Viewer-only `oceanAxisUnits` extension — a
+ * `{ dimensionName: unitString }` map used to label the X/Y/Z position
+ * readouts (e.g. `{ "x": "°E", "y": "°N", "z": "m" }`). Needed because
+ * Neuroglancer's coordinate-space units are SI-only and reject `"°"`. The
+ * wrapper strips it before handing the state to Neuroglancer — see
+ * `wrapper/units.ts` (`setAxisUnits`).
+ */
+export type ViewerStateJson = NeuroglancerViewerStateJson & {
+	oceanAxisUnits?: Record<string, string>;
+};
 
 /** Inbound: portal → viewer. */
 export interface ConfigMessage {

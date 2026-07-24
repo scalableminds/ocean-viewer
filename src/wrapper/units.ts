@@ -22,53 +22,53 @@ let reapply: (() => void) | undefined;
 
 /** Set the dimension-name → unit map (from a CONFIG's `oceanAxisUnits`). */
 export function setAxisUnits(units: Record<string, string> | undefined): void {
-  axisUnits = units ?? {};
-  reapply?.();
+	axisUnits = units ?? {};
+	reapply?.();
 }
 
 export function installUnitLabels(_viewer: Viewer): () => void {
-  const apply = (): void => {
-    for (const dim of document.querySelectorAll<HTMLElement>(
-      ".neuroglancer-position-dimension",
-    )) {
-      const nameInput = dim.querySelector<HTMLInputElement>(
-        ".neuroglancer-position-dimension-name",
-      );
-      const coord = dim.querySelector<HTMLElement>(
-        ".neuroglancer-position-dimension-coordinate",
-      );
-      if (nameInput === null || coord === null) continue;
+	const apply = (): void => {
+		for (const dim of document.querySelectorAll<HTMLElement>(
+			".neuroglancer-position-dimension",
+		)) {
+			const nameInput = dim.querySelector<HTMLInputElement>(
+				".neuroglancer-position-dimension-name",
+			);
+			const coord = dim.querySelector<HTMLElement>(
+				".neuroglancer-position-dimension-coordinate",
+			);
+			if (nameInput === null || coord === null) continue;
 
-      const unit = axisUnits[nameInput.value] ?? "";
-      let label = dim.querySelector<HTMLElement>(`.${UNIT_LABEL_CLASS}`);
+			const unit = axisUnits[nameInput.value] ?? "";
+			let label = dim.querySelector<HTMLElement>(`.${UNIT_LABEL_CLASS}`);
 
-      if (unit === "") {
-        label?.remove();
-        continue;
-      }
-      if (label === null) {
-        label = document.createElement("span");
-        label.className = UNIT_LABEL_CLASS;
-        coord.insertAdjacentElement("afterend", label);
-      }
-      if (label.textContent !== unit) {
-        label.textContent = unit;
-      }
-    }
-  };
+			if (unit === "") {
+				label?.remove();
+				continue;
+			}
+			if (label === null) {
+				label = document.createElement("span");
+				label.className = UNIT_LABEL_CLASS;
+				coord.insertAdjacentElement("afterend", label);
+			}
+			if (label.textContent !== unit) {
+				label.textContent = unit;
+			}
+		}
+	};
 
-  reapply = apply;
-  apply();
+	reapply = apply;
+	apply();
 
-  // The widget's rows are re-rendered on navigation / new CONFIG. `apply` is
-  // idempotent, so observing its own mutations settles after one quiet cycle.
-  const topRow =
-    document.querySelector(".neuroglancer-viewer-top-row") ?? document.body;
-  const observer = new MutationObserver(() => apply());
-  observer.observe(topRow, { childList: true, subtree: true });
+	// The widget's rows are re-rendered on navigation / new CONFIG. `apply` is
+	// idempotent, so observing its own mutations settles after one quiet cycle.
+	const topRow =
+		document.querySelector(".neuroglancer-viewer-top-row") ?? document.body;
+	const observer = new MutationObserver(() => apply());
+	observer.observe(topRow, { childList: true, subtree: true });
 
-  return () => {
-    observer.disconnect();
-    if (reapply === apply) reapply = undefined;
-  };
+	return () => {
+		observer.disconnect();
+		if (reapply === apply) reapply = undefined;
+	};
 }

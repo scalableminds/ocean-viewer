@@ -22,7 +22,7 @@ import type { ConfigMessage, ViewerStateJson } from "../protocol.js";
 import { resolveStateColormaps } from "./colormaps.js";
 import { setAxisUnits } from "./units.js";
 
-const PRESERVED_CAMERA_KEYS: ReadonlyArray<string> = [
+const PRESERVED_CAMERA_KEYS: ReadonlyArray<keyof ViewerStateJson> = [
 	"position",
 	"projectionOrientation",
 	"projectionScale",
@@ -47,9 +47,7 @@ export class ConfigApplier {
 		// `oceanAxisUnits` (X/Y/Z readout unit labels) is applied out-of-band and
 		// stripped so it never reaches `restoreState`. Only updated when present,
 		// so partial CONFIGs that omit it keep the current units.
-		const { oceanAxisUnits, ...rawState } = message.state as ViewerStateJson & {
-			oceanAxisUnits?: Record<string, string>;
-		};
+		const { oceanAxisUnits, ...rawState } = message.state as ViewerStateJson;
 		if (oceanAxisUnits !== undefined) {
 			setAxisUnits(oceanAxisUnits);
 		}
@@ -77,9 +75,23 @@ export class ConfigApplier {
 		const merged: ViewerStateJson = { ...state };
 		for (const key of PRESERVED_CAMERA_KEYS) {
 			if (!(key in state) && key in current) {
-				merged[key] = current[key];
+				copyKey(merged, current, key);
 			}
 		}
 		this.viewer.state.restoreState(merged);
 	}
+}
+
+/**
+ * Copy one same-named key between two values of the same type.
+ *
+ * A plain `target[key] = source[key]` doesn't type-check when `key` is a
+ * generic `keyof T` rather than a literal: TS can't correlate which specific
+ * property `key` names, so it can't verify the read from `source` matches
+ * what `target` accepts for that same (unknown-to-it) property. Routing the
+ * assignment through a function generic over `T`/`K extends keyof T` gives TS
+ * that correlation back.
+ */
+function copyKey<T, K extends keyof T>(target: T, source: T, key: K): void {
+	target[key] = source[key];
 }
