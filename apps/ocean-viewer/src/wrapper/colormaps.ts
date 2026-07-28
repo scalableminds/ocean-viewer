@@ -20,7 +20,7 @@ import type {
 	ColormapName,
 	ColormapSpec,
 	ViewerStateJson,
-} from "../protocol.js";
+} from "@ocean-viewer/protocol";
 
 export type { ColormapName, ColormapSpec };
 

@@ -16,9 +16,8 @@
  *               position/orientation/zoom unless the partial names them.
  */
 
+import type { ConfigMessage, ViewerStateJson } from "@ocean-viewer/protocol";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
-
-import type { ConfigMessage, ViewerStateJson } from "../protocol.js";
 import { resolveStateColormaps } from "./colormaps.js";
 import { setAxisUnits } from "./units.js";
 

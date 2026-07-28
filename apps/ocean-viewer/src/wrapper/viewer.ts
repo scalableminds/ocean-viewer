@@ -9,6 +9,7 @@
  * once and hand it to the config applier as an initial full state.
  */
 
+import type { ViewerStateJson } from "@ocean-viewer/protocol";
 import {
 	bindDefaultCopyHandler,
 	bindDefaultPasteHandler,
@@ -16,8 +17,6 @@ import {
 import { setDefaultInputEventBindings } from "neuroglancer/unstable/ui/default_input_event_bindings.js";
 import { makeDefaultViewer } from "neuroglancer/unstable/ui/default_viewer.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
-
-import type { ViewerStateJson } from "../protocol.js";
 
 export function createViewer(target: HTMLElement): Viewer {
 	const viewer = makeDefaultViewer({

@@ -1,0 +1,13 @@
+{
+	"name": "@ocean-viewer/protocol",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Shared postMessage protocol between the Ocean Viewer iframe and its embedding portal.",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	}
+}

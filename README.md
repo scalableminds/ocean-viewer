@@ -1,14 +1,19 @@
 # Ocean Viewer
 
-An npm-workspaces monorepo with two apps:
+An npm-workspaces monorepo with two apps and a shared package:
 
 | App | What it is |
 |---|---|
 | [apps/ocean-viewer](apps/ocean-viewer/README.md) | A **Volumetric Viewer** for the MyOcean Data Portal, built on [Neuroglancer](https://github.com/google/neuroglancer) and embedded as an `<iframe>`. |
 | [apps/my-ocean-mock](apps/my-ocean-mock/README.md) | A React mock of the MyOcean Data Portal parent page, for local development of the viewer's CONFIG protocol. |
 
-The two only talk to each other at runtime, over `postMessage` through an
-iframe — see each app's own README for details.
+| Package | What it is |
+|---|---|
+| [packages/protocol](packages/protocol/src/index.ts) | The shared `postMessage` API contract (message types, `ViewerStateJson`, type guards) between the two apps above. |
+
+The two apps only talk to each other at runtime, over `postMessage` API through an
+iframe, using the types from `packages/protocol` — see each app's own README
+for details.
 
 ## Setup
 

@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef } from "react";
 import {
-	buildFullState,
 	type ConfigMessage,
 	PROTOCOL_NAMESPACE,
 	type ViewerStateJson,
-} from "./protocol";
+} from "@ocean-viewer/protocol";
+import { useCallback, useEffect, useRef } from "react";
+import { buildFullState } from "./stateBuilder";
 import type { Layer } from "./types";
 
 /** Ocean Viewer dev-server URL. Override via VITE_VIEWER_URL. */
@@ -67,14 +67,14 @@ export function OceanViewerFrame({ layers, onClick }: Props) {
 	// Full state for the current layers, with the user's last camera grafted on.
 	// Stable identity (only reads refs/module constants), same reason as `post`.
 	const composeState = useCallback((layerList: Layer[]): ViewerStateJson => {
-		const state = buildFullState(layerList);
-		const camera = cameraRef.current;
+		const state = buildFullState(layerList) as Record<string, unknown>;
+		const camera = cameraRef.current as Record<string, unknown> | null;
 		if (camera) {
 			for (const key of CAMERA_KEYS) {
 				if (key in camera) state[key] = camera[key];
 			}
 		}
-		return state;
+		return state as ViewerStateJson;
 	}, []);
 
 	// Send the initial state once the iframe document has loaded. A short delay

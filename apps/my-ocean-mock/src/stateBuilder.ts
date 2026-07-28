@@ -1,24 +1,11 @@
+import type {
+	NeuroglancerLayerJson,
+	ViewerStateJson,
+} from "@ocean-viewer/protocol";
 import type { Layer } from "./types";
 
-/**
- * Wire contract with the Ocean Viewer iframe. Mirrors `src/protocol.ts` in the
- * viewer: messages share a `namespace` marker; `type` selects the payload. We
- * only need the outbound CONFIG side here, plus recognising inbound REPORT/CLICK.
- */
-export const PROTOCOL_NAMESPACE = "ocean-viewer" as const;
-
-/** Plain Neuroglancer state JSON (the `#!{...}` schema), with Ocean extensions. */
-export type ViewerStateJson = Record<string, unknown>;
-
-export interface ConfigMessage {
-	namespace: typeof PROTOCOL_NAMESPACE;
-	type: "CONFIG";
-	state: ViewerStateJson;
-	mode: "full" | "partial";
-}
-
 /** Translate one UI layer into a Neuroglancer image layer + `oceanColormap`. */
-function toNeuroglancerLayer(layer: Layer): ViewerStateJson {
+function toNeuroglancerLayer(layer: Layer): NeuroglancerLayerJson {
 	return {
 		type: "image",
 		name: layer.shortName,
@@ -44,7 +31,7 @@ function toNeuroglancerLayer(layer: Layer): ViewerStateJson {
 }
 
 /** The `layers` array of a CONFIG, derived from the current UI layer list. */
-export function layersToState(layers: Layer[]): ViewerStateJson[] {
+export function layersToState(layers: Layer[]): NeuroglancerLayerJson[] {
 	return layers.map(toNeuroglancerLayer);
 }
 
@@ -56,13 +43,13 @@ export function layersToState(layers: Layer[]): ViewerStateJson[] {
  * currently-visible layers (e.g. dropping thetao's t/z when it is hidden), which
  * misaligns the preserved position array and breaks the view.
  */
-const DIMENSIONS = {
+const DIMENSIONS: Record<string, [number, string]> = {
 	x: [1, ""],
 	y: [1, ""],
 	z: [1, ""],
 	t: [1, ""],
 	tc: [1, ""],
-} as const;
+};
 
 /**
  * Build the initial full CONFIG state.

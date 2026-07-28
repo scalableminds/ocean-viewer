@@ -10,12 +10,12 @@
 
 import {
 	type ConfigMessage,
-	type Message,
 	isConfigMessage,
 	isOceanMessage,
+	type Message,
 	type OutboundMessage,
 	PROTOCOL_NAMESPACE,
-} from "../protocol.js";
+} from "@ocean-viewer/protocol";
 
 export interface BridgeOptions {
 	/** Allowed parent origin. If omitted, locks onto the first valid sender. */
