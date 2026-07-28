@@ -10,11 +10,11 @@
 
 import {
 	type ConfigMessage,
-	type Envelope,
+	type Message,
 	isConfigMessage,
-	isOceanEnvelope,
+	isOceanMessage,
 	type OutboundMessage,
-	PROTOCOL_SOURCE,
+	PROTOCOL_NAMESPACE,
 } from "../protocol.js";
 
 export interface BridgeOptions {
@@ -48,8 +48,8 @@ export class Bridge {
 			// No origin established yet; refuse to broadcast to "*".
 			return;
 		}
-		const envelope: Envelope<OutboundMessage> = {
-			source: PROTOCOL_SOURCE,
+		const envelope: Message<OutboundMessage> = {
+			namespace: PROTOCOL_NAMESPACE,
 			...message,
 		};
 		this.parent.postMessage(envelope, targetOrigin);
@@ -60,7 +60,7 @@ export class Bridge {
 		if (this.parent !== null && event.source !== this.parent) {
 			return;
 		}
-		if (!isOceanEnvelope(event.data)) {
+		if (!isOceanMessage(event.data)) {
 			return;
 		}
 		if (!this.isOriginAllowed(event.origin)) {

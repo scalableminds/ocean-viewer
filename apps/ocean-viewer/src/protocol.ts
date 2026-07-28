@@ -3,8 +3,8 @@
  * embedded Ocean Viewer iframe.
  *
  * All messages share a small envelope so the bridge can discriminate types and
- * ignore unrelated `postMessage` traffic on the same window. The `source` field
- * is a constant marker; `type` selects the payload shape.
+ * ignore unrelated `postMessage` traffic on the same window. The `namespace`
+ * field is a constant marker; `type` selects the payload shape.
  *
  * NOTE: the exact wire schema is still to be finalised with the MyOcean team
  * (see the implementation plan's open items). This module is the single source
@@ -12,7 +12,7 @@
  */
 
 /** Marker identifying messages belonging to the Ocean Viewer protocol. */
-export const PROTOCOL_SOURCE = "ocean-viewer" as const;
+export const PROTOCOL_NAMESPACE = "ocean-viewer" as const;
 
 /** Named colormaps implemented by `wrapper/colormaps.ts`'s GLSL resolver. */
 export type ColormapName =
@@ -195,25 +195,25 @@ export interface ClickMessage {
 export type InboundMessage = ConfigMessage;
 export type OutboundMessage = ReportMessage | ClickMessage;
 
-/** Full envelope as it travels over `postMessage`. */
-export type Envelope<M extends { type: string }> = M & {
-	source: typeof PROTOCOL_SOURCE;
+/** Full message as it travels over `postMessage`: the payload plus `namespace`. */
+export type Message<M extends { type: string }> = M & {
+	namespace: typeof PROTOCOL_NAMESPACE;
 };
 
-export function isOceanEnvelope(
+export function isOceanMessage(
 	data: unknown,
-): data is Envelope<{ type: string }> {
+): data is Message<{ type: string }> {
 	return (
 		typeof data === "object" &&
 		data !== null &&
-		(data as { source?: unknown }).source === PROTOCOL_SOURCE &&
+		(data as { namespace?: unknown }).namespace === PROTOCOL_NAMESPACE &&
 		typeof (data as { type?: unknown }).type === "string"
 	);
 }
 
 export function isConfigMessage(
-	data: Envelope<{ type: string }>,
-): data is Envelope<ConfigMessage> {
+	data: Message<{ type: string }>,
+): data is Message<ConfigMessage> {
 	return (
 		data.type === "CONFIG" &&
 		typeof (data as { state?: unknown }).state === "object" &&

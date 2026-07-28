@@ -2,16 +2,16 @@ import type { Layer } from "./types";
 
 /**
  * Wire contract with the Ocean Viewer iframe. Mirrors `src/protocol.ts` in the
- * viewer: messages share a `source` marker; `type` selects the payload. We only
- * need the outbound CONFIG side here, plus recognising inbound REPORT/CLICK.
+ * viewer: messages share a `namespace` marker; `type` selects the payload. We
+ * only need the outbound CONFIG side here, plus recognising inbound REPORT/CLICK.
  */
-export const PROTOCOL_SOURCE = "ocean-viewer" as const;
+export const PROTOCOL_NAMESPACE = "ocean-viewer" as const;
 
 /** Plain Neuroglancer state JSON (the `#!{...}` schema), with Ocean extensions. */
 export type ViewerStateJson = Record<string, unknown>;
 
 export interface ConfigMessage {
-	source: typeof PROTOCOL_SOURCE;
+	namespace: typeof PROTOCOL_NAMESPACE;
 	type: "CONFIG";
 	state: ViewerStateJson;
 	mode: "full" | "partial";

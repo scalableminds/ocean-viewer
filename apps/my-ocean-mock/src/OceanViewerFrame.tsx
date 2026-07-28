@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import {
 	buildFullState,
 	type ConfigMessage,
-	PROTOCOL_SOURCE,
+	PROTOCOL_NAMESPACE,
 	type ViewerStateJson,
 } from "./protocol";
 import type { Layer } from "./types";
@@ -58,10 +58,10 @@ export function OceanViewerFrame({ layers, onClick }: Props) {
 
 	// Stable identity (only reads refs) so the effect below can list it as a
 	// dependency without re-firing on every render.
-	const post = useCallback((message: Omit<ConfigMessage, "source">) => {
+	const post = useCallback((message: Omit<ConfigMessage, "namespace">) => {
 		const win = iframeRef.current?.contentWindow;
 		if (!win) return;
-		win.postMessage({ source: PROTOCOL_SOURCE, ...message }, "*");
+		win.postMessage({ namespace: PROTOCOL_NAMESPACE, ...message }, "*");
 	}, []);
 
 	// Full state for the current layers, with the user's last camera grafted on.
@@ -102,7 +102,7 @@ export function OceanViewerFrame({ layers, onClick }: Props) {
 	useEffect(() => {
 		const onMessage = (event: MessageEvent) => {
 			const data = event.data;
-			if (!data || data.source !== PROTOCOL_SOURCE) return;
+			if (!data || data.namespace !== PROTOCOL_NAMESPACE) return;
 			if (data.type === "REPORT" && data.state) {
 				cameraRef.current = data.state as ViewerStateJson;
 			} else if (data.type === "CLICK" && data.geographic) {
