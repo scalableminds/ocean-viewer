@@ -7,8 +7,9 @@
  *     shader that maps the data value through the colormap.
  *
  * On top of the colormap we support, per the spec:
- *   - logarithmic scaling   (`scale: "log"`)
- *   - value clamping        (`clamp: true`)
+ *   - logarithmic scaling   (`logScale: true`)
+ *   - value clamping        (`valueClamp: true`)
+ *   - reversed colormaps    (`colormapInvert: true`)
  *   - null / missing voxels rendered transparent (NaN, CMEMS fill, sentinel)
  *
  * Named colormaps are implemented as compact GLSL polynomial approximations
@@ -97,25 +98,27 @@ function looksLikeGlsl(s: string): boolean {
  */
 export function resolveShader(spec: ColormapSpec): string {
 	// Raw GLSL passthrough.
-	if (typeof spec.colormap === "string" && looksLikeGlsl(spec.colormap)) {
-		return spec.colormap;
+	if (typeof spec.colormapId === "string" && looksLikeGlsl(spec.colormapId)) {
+		return spec.colormapId;
 	}
-	const name: ColormapName = isNamedColormap(spec.colormap)
-		? spec.colormap
+	const name: ColormapName = isNamedColormap(spec.colormapId)
+		? spec.colormapId
 		: "viridis";
-	const clamp = spec.clamp ?? true;
-	const log = spec.scale === "log";
+	const clamp = spec.valueClamp ?? false;
+	const log = spec.logScale === true;
+	const invert = spec.colormapInvert === true;
 
 	// Normalisation expression mapping the raw value to [0,1].
 	const norm = log
-		? `float t = (log(value) - log(${glslFloat(spec.dataMin)})) / (log(${glslFloat(spec.dataMax)}) - log(${glslFloat(spec.dataMin)}));`
-		: `float t = (value - ${glslFloat(spec.dataMin)}) / (${glslFloat(spec.dataMax)} - ${glslFloat(spec.dataMin)});`;
+		? `float t = (log(value) - log(${glslFloat(spec.valueMin)})) / (log(${glslFloat(spec.valueMax)}) - log(${glslFloat(spec.valueMin)}));`
+		: `float t = (value - ${glslFloat(spec.valueMin)}) / (${glslFloat(spec.valueMax)} - ${glslFloat(spec.valueMin)});`;
 
 	// For log scale, non-positive values are undefined → treat as missing.
 	const logGuard = log
 		? `\n  if (value <= 0.0) { emitTransparent(); return; }`
 		: "";
 	const clampLine = clamp ? `\n  t = clamp(t, 0.0, 1.0);` : "";
+	const invertLine = invert ? `\n  t = 1.0 - t;` : "";
 	// Explicit no-data sentinel (e.g. CMEMS bathymetry's -32767) → transparent.
 	const fillGuard =
 		spec.noDataValue !== undefined
@@ -129,7 +132,7 @@ void main() {
   float value = getDataValue();
   if (value != value) { emitTransparent(); return; }
   if (abs(value) > 1e30) { emitTransparent(); return; }${fillGuard}${logGuard}
-  ${norm}${clampLine}
+  ${norm}${clampLine}${invertLine}
   emitRGB(cmap(t));
 }`;
 }
@@ -140,12 +143,12 @@ void main() {
  *
  * This is the integration point for the Data Portal's "named colormap"
  * interface: instead of hand-writing GLSL, a CONFIG layer may carry
- *   `"oceanColormap": { "colormap": "viridis", "dataMin": 10, "dataMax": 20,
- *                       "scale": "log", "clamp": true }`
+ *   `"oceanColormap": { "colormapId": "viridis", "valueMin": 10, "valueMax": 20,
+ *                       "logScale": true, "valueClamp": true }`
  * which we convert to a `shader` (log scale, clamping and null→black included)
  * and strip, so the object handed to `restoreState` is standard Neuroglancer
  * state. Layers that already specify a raw `shader` are left untouched; the
- * `colormap` field may also itself be a raw GLSL string (passed through).
+ * `colormapId` field may also itself be a raw GLSL string (passed through).
  */
 export function resolveStateColormaps(state: ViewerStateJson): ViewerStateJson {
 	const layers = state.layers;

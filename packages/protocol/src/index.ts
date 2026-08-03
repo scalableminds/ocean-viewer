@@ -31,15 +31,17 @@ export type ColormapName =
  */
 export interface ColormapSpec {
 	/** Named colormap, or a raw GLSL shader string (detected by content). */
-	colormap: ColormapName | string;
-	/** Data value mapped to colormap 0.0. */
-	dataMin: number;
-	/** Data value mapped to colormap 1.0. */
-	dataMax: number;
-	/** Linear (default) or logarithmic normalisation. */
-	scale?: "linear" | "log";
-	/** Clamp out-of-range values to the endpoints (default true). */
-	clamp?: boolean;
+	colormapId: ColormapName | string;
+	/** Data value mapped to colormap 0.0 (1.0 when {@link colormapInvert} is set). */
+	valueMin: number;
+	/** Data value mapped to colormap 1.0 (0.0 when {@link colormapInvert} is set). */
+	valueMax: number;
+	/** Logarithmic (true) or linear (default, false) normalisation. */
+	logScale?: boolean;
+	/** Clamp out-of-range values to the endpoints (default false). */
+	valueClamp?: boolean;
+	/** Use the colormap identified by {@link colormapId} in reverse order (default false). */
+	colormapInvert?: boolean;
 	/**
 	 * Explicit no-data sentinel (e.g. CMEMS bathymetry's `-32767`). Voxels equal
 	 * to it render transparent. NaN and the CMEMS default fill (~9.969e36) are

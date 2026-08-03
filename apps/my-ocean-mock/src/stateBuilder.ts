@@ -20,11 +20,11 @@ function toNeuroglancerLayer(layer: Layer): NeuroglancerLayerJson {
 			enableDefaultSubsources: true,
 		},
 		oceanColormap: {
-			colormap: layer.colormap,
-			dataMin: layer.min,
-			dataMax: layer.max,
-			scale: layer.scale,
-			clamp: true,
+			colormapId: layer.colormap,
+			valueMin: layer.min,
+			valueMax: layer.max,
+			logScale: layer.scale === "log",
+			valueClamp: true,
 			...(layer.noData !== undefined ? { noDataValue: layer.noData } : {}),
 		},
 	};
