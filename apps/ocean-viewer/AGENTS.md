@@ -1,15 +1,6 @@
 # AGENTS.md
 
-Guidance for AI agents and contributors working in this repository. Read this
-before making changes. See [README.md](README.md) for the user-facing overview.
-
-## What this is
-
-Ocean Viewer is a thin TypeScript wrapper around the **`neuroglancer`** npm
-package, bundled with **Vite**, embedded as an `<iframe>` in the MyOcean Data
-Portal. The portal drives the viewer and reads back state/clicks over
-`postMessage()`. We do **not** fork Neuroglancer — we configure it, wrap it, and
-style it from the outside. Only extend Neuroglancer's source as a last resort.
+See [README.md](README.md) for the user-facing overview.
 
 ## Golden rules (hard-won — don't relearn these the hard way)
 
@@ -49,7 +40,7 @@ npm run build
 ```
 
 Local verification uses the **Claude preview tools** driving a server defined in
-`.claude/launch.json` (gitignored). To drive the viewer without the parent
+`.claude/launch.json`. To drive the viewer without the parent
 portal, post a CONFIG to the window, or load a state via the `#!` URL hash. For
 an interactive parent-side harness, see
 [my-ocean-mock](../my-ocean-mock/README.md).
@@ -59,9 +50,10 @@ an interactive parent-side harness, see
 
 ## Architecture & conventions
 
-- Wrapper modules live in `src/wrapper/`; the parent↔iframe message contract is
-  [src/protocol.ts](src/protocol.ts) (`CONFIG` / `REPORT` / `CLICK`, each with a
-  `source: "ocean-viewer"` envelope, origin-restricted).
+- Wrapper modules live in `src/wrapper/`; the parent↔iframe message contract is the
+  shared [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) package
+  (`CONFIG` / `REPORT` / `CLICK`, each with a `namespace: "ocean-viewer"` envelope,
+  origin-restricted).
 - **Colormaps:** the portal can send a named colormap on an image layer via the
   `oceanColormap` field (`{colormap, dataMin, dataMax, scale?, clamp?}`), which
   the wrapper resolves into the layer `shader` before `restoreState`
@@ -74,18 +66,6 @@ an interactive parent-side harness, see
   `display:none` on chrome classes), loaded last so it overrides NG's stylesheet.
   Keep the top-row **position widget** (X/Y/Z readout).
 - Match the surrounding code style. Keep `tsc` clean (`strict`, no unused).
-
-## Status / roadmap
-
-Done & verified against real data: project scaffold; postMessage bridge with
-full/partial CONFIG, debounced REPORT, `#!` hash seed; colormap resolver
-(named + raw GLSL), log scale, clamping, null→black; UI-chrome hiding.
-
-In progress / next: **Phase 4** (volumeRenderingMode min/max in 3D, segmentation
-+ mesh layers, multi-layer visibility), **Phase 5** (CLICK → lon/lat/depth via
-the coordinate transform), **Phase 6** (mobile single-panel layout + toggle).
-Up-lock (constrain 3D rotation so elevation stays vertical) is a deferred,
-best-effort source extension.
 
 ## Don't
 
