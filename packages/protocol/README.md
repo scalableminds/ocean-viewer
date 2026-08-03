@@ -68,13 +68,27 @@ Layers re-use the [Neuroglancer API](https://neuroglancer-docs.web.app/json/api/
 
 | Field | Type | Default | Notes |
 |---|---|---|---|
-| `colormapId` | name or raw GLSL string | required | `viridis`, `magma`, `plasma`, `inferno`, `turbo`, `jet`, or `grayscale` |
+| `colormapId` | colormap id or raw GLSL string | required | one of the ids below, or a shader passed through verbatim |
 | `valueMin` / `valueMax` | number | required | data range mapped to colormap 0–1 (1–0 when `colormapInvert` is set) |
 | `logScale` | boolean | `false` | logarithmic instead of linear normalization |
 | `valueClamp` | boolean | `false` | clamp out-of-range values to the endpoints |
 | `colormapInvert` | boolean | `false` | use the colormap in reverse order |
 | `noDataValue` | number | — | raw-value sentinel for missing data, checked before scale/offset (NaN and CMEMS's ~9.969e36 fill are always treated as missing regardless) |
 | `scaleFactor` / `addOffset` | number | `1` / `0` | CF packing: `physical = raw * scaleFactor + addOffset` |
+
+### Colormap ids
+
+A colormap is identified by its name. The 26 available ids are:
+
+`algae`, `amp`, `balance`, `bloom`, `cividis`, `cyclic`, `delta`, `dense`,
+`difference`, `gray`, `haline`, `ice`, `inferno`, `magma`, `matter`, `ncview`,
+`ocean`, `plasma`, `rainbow`, `solar`, `speed`, `tempo`, `ternary`, `thermal`,
+`twilight`, `viridis`
+
+
+An unknown id falls back to `viridis`. The colour data behind each id lives in
+`@ocean-viewer/colormaps`, shared by the viewer's shaders and the portal's UI so
+that a layer's legend matches what is drawn on the map.
 
 A real `state`, as sent by the `my-ocean-mock` demo (see `apps/my-ocean-mock/src/layers.ts`):
 

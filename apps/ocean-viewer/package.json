@@ -11,6 +11,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@ocean-viewer/colormaps": "*",
 		"@ocean-viewer/protocol": "*",
 		"neuroglancer": "2.41.2"
 	},

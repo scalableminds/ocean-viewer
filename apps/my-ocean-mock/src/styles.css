@@ -215,6 +215,16 @@ body {
 	align-items: flex-start;
 }
 
+/* Name of the currently selected colormap, under the "Colour map" label — with
+   26 swatches in the grid, hover titles alone don't say which one is active. */
+.setting-value {
+	display: block;
+	margin-top: 2px;
+	color: var(--text-dim);
+	font-weight: 500;
+	font-size: 12px;
+}
+
 .colmap-grid {
 	display: grid;
 	grid-template-columns: repeat(5, 1fr);
@@ -223,7 +233,7 @@ body {
 }
 
 .swatch {
-	height: 24px;
+	height: 20px;
 	border: 2px solid transparent;
 	border-radius: 3px;
 	cursor: pointer;

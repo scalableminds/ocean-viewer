@@ -28,6 +28,7 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
 | [src/wrapper/report.ts](src/wrapper/report.ts) | Debounced REPORT of viewer state |
 | [src/wrapper/colormaps.ts](src/wrapper/colormaps.ts) | Named colormap → GLSL shader resolver |
 | [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) | CONFIG / REPORT / CLICK message contract |
+| [@ocean-viewer/colormaps](../../packages/colormaps/src/index.ts) | Colour data behind each colormap id |
 | [src/chrome.css](src/chrome.css) | Hides Neuroglancer's built-in UI chrome (CSS-only) |
 
 ## Parent ↔ iframe protocol
@@ -54,14 +55,21 @@ Image layers may carry an `oceanColormap` field (an Ocean Viewer extension) that
 the wrapper resolves into the layer `shader`:
 
 ```json
-"oceanColormap": { "colormap": "viridis", "dataMin": 10, "dataMax": 20,
-                   "scale": "log", "clamp": true }
+"oceanColormap": { "colormapId": "viridis", "valueMin": 10, "valueMax": 20,
+                   "logScale": true, "valueClamp": true }
 ```
 
-`colormap` is a named map (`viridis`, `magma`, `plasma`, `inferno`, `turbo`,
-`jet`, `grayscale`) or a raw GLSL shader string (passed through). `scale: "log"`
-enables logarithmic rendering; `clamp` clamps to `[dataMin, dataMax]`; missing
-(`NaN`) voxels render black.
+`colormapId` is a colormap id or a raw GLSL shader string (passed through);
+`logScale` enables logarithmic rendering, `valueClamp` clamps to
+`[valueMin, valueMax]`, `colormapInvert` reverses the colormap, and missing
+voxels (`NaN`, the CMEMS fill value, or an explicit `noDataValue`) render
+transparent. See the [protocol README](../../packages/protocol/README.md#layers--oceancolormap)
+for the full field list.
+
+The 26 colormap ids and their colour data live in
+[@ocean-viewer/colormaps](../../packages/colormaps/); this app compiles the one a
+layer names into a GLSL `cmap()` function, since Neuroglancer itself only ships
+`colormapJet`/`colormapCubehelix`.
 
 ## Axis units
 

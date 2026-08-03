@@ -1,23 +1,20 @@
-import type { ColormapName } from "./types";
+import { COLORMAP_STOPS } from "@ocean-viewer/colormaps";
+import type { ColormapId } from "@ocean-viewer/protocol";
+
+export { COLORMAP_IDS } from "@ocean-viewer/colormaps";
 
 /**
- * CSS gradient stops per colormap, used purely to render the swatches and the
- * colour bar in the mock UI. (The actual GLSL colormaps live in the viewer's
- * `wrapper/colormaps.ts`; these are visual approximations of the same maps.)
+ * A `linear-gradient(...)` CSS value for the given colormap, used to paint the
+ * swatches and colour bars in the mock UI.
+ *
+ * Colormaps are stored as piecewise-linear stops, which is exactly what a CSS
+ * linear gradient interpolates — so a swatch shows the same colours the viewer's
+ * shader renders, without the mock keeping its own approximation of each map.
  */
-export const COLORMAP_STOPS: Record<ColormapName, string[]> = {
-	viridis: ["#440154", "#414487", "#2a788e", "#22a884", "#7ad151", "#fde725"],
-	magma: ["#000004", "#3b0f70", "#8c2981", "#de4968", "#fe9f6d", "#fcfdbf"],
-	plasma: ["#0d0887", "#6a00a8", "#b12a90", "#e16462", "#fca636", "#f0f921"],
-	inferno: ["#000004", "#420a68", "#932667", "#dd513a", "#fca50a", "#fcffa4"],
-	turbo: ["#30123b", "#4669f7", "#1ae4b6", "#a4fc3c", "#fb7e21", "#7a0403"],
-	jet: ["#00007f", "#0000ff", "#00ffff", "#ffff00", "#ff0000", "#7f0000"],
-	grayscale: ["#000000", "#404040", "#808080", "#c0c0c0", "#ffffff"],
-};
-
-export const COLORMAP_NAMES = Object.keys(COLORMAP_STOPS) as ColormapName[];
-
-/** A `linear-gradient(...)` CSS value for the given colormap. */
-export function gradientCss(name: ColormapName, angle = "90deg"): string {
-	return `linear-gradient(${angle}, ${COLORMAP_STOPS[name].join(", ")})`;
+export function gradientCss(id: ColormapId, angle = "90deg"): string {
+	const stops = COLORMAP_STOPS[id].map(
+		([position, r, g, b]) =>
+			`rgb(${r} ${g} ${b}) ${(position * 100).toFixed(2)}%`,
+	);
+	return `linear-gradient(${angle}, ${stops.join(", ")})`;
 }

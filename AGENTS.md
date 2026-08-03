@@ -16,7 +16,16 @@ An npm-workspaces monorepo with two independent apps under `apps/`:
   See its own [README](apps/my-ocean-mock/README.md).
 
 The two apps only talk to each other at runtime, over `postMessage` through an
-iframe — there's no code-level dependency between them.
+iframe. What they do share is the contract for that traffic, as packages under
+`packages/`:
+
+- **[packages/protocol](packages/protocol/)** — the CONFIG / REPORT / CLICK
+  message types, including which colormap ids exist.
+- **[packages/colormaps](packages/colormaps/)** — the colour data behind those
+  ids, so the viewer's shaders and the portal's legends agree. `src/stops.ts` is
+  generated; see that package's [README](packages/colormaps/README.md).
+
+Packages are consumed straight from `src/` (no build step) via npm workspaces.
 
 ## Shared tooling
 

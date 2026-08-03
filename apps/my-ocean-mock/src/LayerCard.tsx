@@ -1,5 +1,6 @@
-import { COLORMAP_NAMES, gradientCss } from "./colormaps";
-import type { ColormapName, Layer } from "./types";
+import type { ColormapId } from "@ocean-viewer/protocol";
+import { COLORMAP_IDS, gradientCss } from "./colormaps";
+import type { Layer } from "./types";
 
 interface Props {
 	layer: Layer;
@@ -192,16 +193,19 @@ export function LayerCard({
 					</div>
 
 					<div className="setting-row colmap-row">
-						<span className="setting-label">Colour map</span>
+						<span className="setting-label">
+							Colour map
+							<span className="setting-value">{layer.colormap}</span>
+						</span>
 						<div className="colmap-grid">
-							{COLORMAP_NAMES.map((name) => (
+							{COLORMAP_IDS.map((id: ColormapId) => (
 								<button
-									key={name}
+									key={id}
 									type="button"
-									title={name}
-									className={`swatch${layer.colormap === name ? " selected" : ""}`}
-									style={{ background: gradientCss(name) }}
-									onClick={() => onChange({ colormap: name as ColormapName })}
+									title={id}
+									className={`swatch${layer.colormap === id ? " selected" : ""}`}
+									style={{ background: gradientCss(id) }}
+									onClick={() => onChange({ colormap: id })}
 								/>
 							))}
 						</div>

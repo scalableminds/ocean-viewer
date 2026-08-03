@@ -14,15 +14,42 @@
 /** Marker identifying messages belonging to the Ocean Viewer protocol. */
 export const PROTOCOL_NAMESPACE = "ocean-viewer" as const;
 
-/** Named colormaps implemented by `wrapper/colormaps.ts`'s GLSL resolver. */
-export type ColormapName =
-	| "viridis"
-	| "magma"
-	| "plasma"
+/**
+ * Identifier of a colormap the viewer can render. A colormap's id is its name;
+ * the colour data behind each one lives in `@ocean-viewer/colormaps` and is
+ * turned into GLSL by the viewer's `wrapper/colormaps.ts`.
+ *
+ * The set is the standard ocean-data palette collection: `cmocean`'s
+ * oceanographic maps, the perceptually uniform matplotlib maps, and a few
+ * legacy ones (`ncview`, `rainbow`) kept for continuity with existing tooling.
+ */
+export type ColormapId =
+	| "algae"
+	| "amp"
+	| "balance"
+	| "bloom"
+	| "cividis"
+	| "cyclic"
+	| "delta"
+	| "dense"
+	| "difference"
+	| "gray"
+	| "haline"
+	| "ice"
 	| "inferno"
-	| "turbo"
-	| "jet"
-	| "grayscale";
+	| "magma"
+	| "matter"
+	| "ncview"
+	| "ocean"
+	| "plasma"
+	| "rainbow"
+	| "solar"
+	| "speed"
+	| "tempo"
+	| "ternary"
+	| "thermal"
+	| "twilight"
+	| "viridis";
 
 /**
  * The Data Portal's colormap extension for an image layer (`oceanColormap`),
@@ -30,8 +57,8 @@ export type ColormapName =
  * `resolveShader` / `resolveStateColormaps`.
  */
 export interface ColormapSpec {
-	/** Named colormap, or a raw GLSL shader string (detected by content). */
-	colormapId: ColormapName | string;
+	/** A {@link ColormapId}, or a raw GLSL shader string (detected by content). */
+	colormapId: ColormapId | string;
 	/** Data value mapped to colormap 0.0 (1.0 when {@link colormapInvert} is set). */
 	valueMin: number;
 	/** Data value mapped to colormap 1.0 (0.0 when {@link colormapInvert} is set). */

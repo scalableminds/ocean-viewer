@@ -1,0 +1,17 @@
+{
+	"name": "@ocean-viewer/colormaps",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Colour data for the named colormaps of the Ocean Viewer protocol, shared by the viewer's GLSL shaders and the portal's UI.",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"generate": "node tools/generate-stops.mjs",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@ocean-viewer/protocol": "*"
+	}
+}

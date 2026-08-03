@@ -1,12 +1,4 @@
-/** Colormap identifiers understood by the Ocean Viewer wrapper. */
-export type ColormapName =
-	| "viridis"
-	| "magma"
-	| "plasma"
-	| "inferno"
-	| "turbo"
-	| "jet"
-	| "grayscale";
+import type { ColormapId } from "@ocean-viewer/protocol";
 
 /**
  * The Neuroglancer `source` plumbing for a layer: the kvstore URL plus the
@@ -48,7 +40,7 @@ export interface Layer {
 	/** Layer opacity in [0, 1]. */
 	opacity: number;
 	/** Selected colormap. */
-	colormap: ColormapName;
+	colormap: ColormapId;
 	/** Lower clamp bound (data value mapped to colormap 0.0). */
 	min: number;
 	/** Upper clamp bound (data value mapped to colormap 1.0). */
