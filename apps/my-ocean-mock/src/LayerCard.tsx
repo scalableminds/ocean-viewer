@@ -102,7 +102,14 @@ function ColorBar({ layer }: { layer: Layer }) {
 		<div className="colorbar">
 			<div
 				className="colorbar-gradient"
-				style={{ background: gradientCss(layer.colormap) }}
+				// Reversed colormaps run right-to-left, so the bar stays a legend
+				// for what the viewer actually draws.
+				style={{
+					background: gradientCss(
+						layer.colormap,
+						layer.invert ? "270deg" : "90deg",
+					),
+				}}
 			/>
 			<div className="colorbar-ticks">
 				<span>{formatNum(layer.min)}</span>
@@ -209,6 +216,16 @@ export function LayerCard({
 								/>
 							))}
 						</div>
+					</div>
+
+					<div className="setting-row toggle-row">
+						<label htmlFor={`inv-${layer.id}`}>Reverse</label>
+						<input
+							id={`inv-${layer.id}`}
+							type="checkbox"
+							checked={layer.invert}
+							onChange={(e) => onChange({ invert: e.target.checked })}
+						/>
 					</div>
 
 					<div className="setting-row minmax-row">

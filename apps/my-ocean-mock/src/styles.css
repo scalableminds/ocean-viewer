@@ -245,6 +245,14 @@ body {
 	box-shadow: 0 0 0 1px var(--blue-bright);
 }
 
+.toggle-row input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	accent-color: var(--blue-bright);
+	cursor: pointer;
+}
+
 .minmax-row {
 	gap: 16px;
 	margin-bottom: 0;

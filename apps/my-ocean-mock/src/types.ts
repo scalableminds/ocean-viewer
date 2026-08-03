@@ -41,6 +41,8 @@ export interface Layer {
 	opacity: number;
 	/** Selected colormap. */
 	colormap: ColormapId;
+	/** Render {@link colormap} in reverse order (the protocol's `colormapInvert`). */
+	invert: boolean;
 	/** Lower clamp bound (data value mapped to colormap 0.0). */
 	min: number;
 	/** Upper clamp bound (data value mapped to colormap 1.0). */

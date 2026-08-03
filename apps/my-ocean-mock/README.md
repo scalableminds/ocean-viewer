@@ -10,8 +10,9 @@ it as an interactive harness when developing the viewer's CONFIG handling.
 - **Layer list** (left): three demo layers (`deptho`, `thetao`, `chl`) mirroring
   the portal screenshots.
 - **Per-layer controls**: visibility toggle (eye), and an expandable settings
-  panel (gear) with **opacity**, **colour map** swatches, and **min/max** clamp
-  bounds. The **log** button toggles linear/logarithmic scaling.
+  panel (gear) with **opacity**, **colour map** swatches, a **reverse** checkbox
+  (the protocol's `colormapInvert`), and **min/max** clamp bounds. The **log**
+  button toggles linear/logarithmic scaling.
 - **Live sync**: every change rebuilds the viewer state and posts it to the
   iframe. The first message is a `full` CONFIG (dimensions, camera, axis units,
   layers); subsequent changes are `partial` CONFIGs carrying only `layers`, so
@@ -73,5 +74,6 @@ time axes. Default position seeds an accessible surface slice (`z = 49`,
   inbound `REPORT`s (see [src/OceanViewerFrame.tsx](src/OceanViewerFrame.tsx)).
 - **Partial CMEMS access.** Only some time/elevation chunks are served (the
   deepest level and many time steps return 403); the seeded slice is known-good.
-- Colour-map swatches are CSS gradient approximations of the viewer's GLSL
-  colormaps; the actual rendering is done by the viewer.
+- Colour-map swatches and colour bars are CSS gradients built from the same
+  `@ocean-viewer/colormaps` stop lists the viewer compiles into GLSL, so the
+  legend matches the render; the rendering itself is done by the viewer.

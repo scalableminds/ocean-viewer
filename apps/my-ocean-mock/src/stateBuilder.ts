@@ -24,6 +24,7 @@ function toNeuroglancerLayer(layer: Layer): NeuroglancerLayerJson {
 			valueMin: layer.min,
 			valueMax: layer.max,
 			logScale: layer.scale === "log",
+			colormapInvert: layer.invert,
 			valueClamp: true,
 			...(layer.noData !== undefined ? { noDataValue: layer.noData } : {}),
 		},
