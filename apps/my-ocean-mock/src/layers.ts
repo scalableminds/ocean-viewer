@@ -87,6 +87,14 @@ const VOLUME_TRANSFORM = {
 /**
  * Transform for the 3-D sea-ice fields. Input dims: [time, latitude,
  * longitude]; output dims: [x, y, time'] — no elevation axis.
+ *
+ * `subsources` turns off the zarr driver's `bounds` subsource: the yellow
+ * data-bounds box. Neuroglancer starts every dimension's bound at ±Infinity
+ * and narrows only the ones a source constrains, so for a layer that has no
+ * elevation output the box is infinite along elevation — an edgeless slab that
+ * fills the section and 3D panels at every zoom. The volume itself is the
+ * `default` subsource and stays enabled (`subsources` only overrides the ids it
+ * names). The 4-D layers constrain all three world axes, so they keep theirs.
  */
 const SURFACE_TRANSFORM = {
 	outputDimensions: {
@@ -99,6 +107,7 @@ const SURFACE_TRANSFORM = {
 		[0, -GRID_STEP, 0, 80], // y = 80 - lat*step (north-up)
 		[1, 0, 0, 0], // time' = time index (local)
 	],
+	subsources: { bounds: false },
 };
 
 export const INITIAL_LAYERS: Layer[] = [
@@ -151,7 +160,7 @@ export const INITIAL_LAYERS: Layer[] = [
 		noData: FILL,
 		scaleFactor: 3.0518509447574615e-5,
 		addOffset: 0,
-		visible: false,
+		visible: true,
 		opacity: 1,
 		colormap: "delta",
 		invert: false,

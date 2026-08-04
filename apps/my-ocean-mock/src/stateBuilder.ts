@@ -18,6 +18,11 @@ function toNeuroglancerLayer(layer: Layer): NeuroglancerLayerJson {
 				outputDimensions: layer.source.outputDimensions,
 			},
 			enableDefaultSubsources: true,
+			// Overrides for individual subsources; ids not listed keep the default
+			// dictated by `enableDefaultSubsources`.
+			...(layer.source.subsources !== undefined
+				? { subsources: layer.source.subsources }
+				: {}),
 		},
 		// Local (non-world) dimensions live on the LAYER, not on the source
 		// transform — the transform only declares them by naming its output

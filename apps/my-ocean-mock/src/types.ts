@@ -18,6 +18,13 @@ export interface LayerSource {
 	outputDimensions: Record<string, [number, string]>;
 	/** Affine matrix (output_rank × input_rank+1) mapping index → world. */
 	matrix: number[][];
+	/**
+	 * Per-subsource enable overrides (`id → enabled`). The zarr driver publishes
+	 * two: `default` (the volume) and `bounds` (the yellow data-bounds box).
+	 * Ids listed here override their default; the rest follow
+	 * `enableDefaultSubsources`.
+	 */
+	subsources?: Record<string, boolean>;
 }
 
 /**
