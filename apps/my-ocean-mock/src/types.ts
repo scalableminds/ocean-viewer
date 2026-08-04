@@ -9,7 +9,12 @@ import type { ColormapId } from "@ocean-viewer/protocol";
 export interface LayerSource {
 	/** Neuroglancer kvstore URL, e.g. ".../static.zarr/deptho/|zarr2:". */
 	url: string;
-	/** Output (world) dimensions of the transform: name → [scale, unit]. */
+	/**
+	 * Output dimensions of the transform: name → [scale, unit]. Names ending in
+	 * `'` are Neuroglancer LOCAL dimensions (per-layer, e.g. `time'`) and are
+	 * kept out of the global coordinate space; all others are world dimensions.
+	 * There must be exactly one entry per input dimension of the array.
+	 */
 	outputDimensions: Record<string, [number, string]>;
 	/** Affine matrix (output_rank × input_rank+1) mapping index → world. */
 	matrix: number[][];
@@ -33,8 +38,23 @@ export interface Layer {
 	unit: string;
 	/** Neuroglancer source + index→world transform. */
 	source: LayerSource;
+	/**
+	 * Per-layer local coordinate space (name → [scale, unit]), for dimensions the
+	 * source transform emits with a trailing `'`. Sent as the Neuroglancer
+	 * layer's `localDimensions`.
+	 */
+	localDimensions?: Record<string, [number, string]>;
+	/** Position within {@link localDimensions}, e.g. the time index. */
+	localPosition?: number[];
 	/** No-data sentinel rendered transparent (e.g. -32767 for bathymetry). */
 	noData?: number;
+	/**
+	 * CF packing of the stored array: physical = raw * `scaleFactor` +
+	 * `addOffset`. Set for the int16-packed CMEMS arrays so {@link min}/{@link max}
+	 * can be given in physical units.
+	 */
+	scaleFactor?: number;
+	addOffset?: number;
 	/** Whether the layer is rendered. */
 	visible: boolean;
 	/** Layer opacity in [0, 1]. */

@@ -19,6 +19,15 @@ function toNeuroglancerLayer(layer: Layer): NeuroglancerLayerJson {
 			},
 			enableDefaultSubsources: true,
 		},
+		// Local (non-world) dimensions live on the LAYER, not on the source
+		// transform — the transform only declares them by naming its output
+		// dimension with a trailing `'`.
+		...(layer.localDimensions !== undefined
+			? { localDimensions: layer.localDimensions }
+			: {}),
+		...(layer.localPosition !== undefined
+			? { localPosition: layer.localPosition }
+			: {}),
 		oceanColormap: {
 			colormapId: layer.colormap,
 			valueMin: layer.min,
@@ -27,6 +36,10 @@ function toNeuroglancerLayer(layer: Layer): NeuroglancerLayerJson {
 			colormapInvert: layer.invert,
 			valueClamp: true,
 			...(layer.noData !== undefined ? { noDataValue: layer.noData } : {}),
+			...(layer.scaleFactor !== undefined
+				? { scaleFactor: layer.scaleFactor }
+				: {}),
+			...(layer.addOffset !== undefined ? { addOffset: layer.addOffset } : {}),
 		},
 	};
 }
@@ -37,36 +50,36 @@ export function layersToState(layers: Layer[]): NeuroglancerLayerJson[] {
 }
 
 /**
- * Shared world coordinate space: x (°E), y (°N), z (elevation index), and the
- * two independent time axes t (thetao) and tc (chl). It must be sent on EVERY
- * update — including partial ones — to pin the dimension order. If a partial
- * update omits it, Neuroglancer recomputes the coordinate space from the
- * currently-visible layers (e.g. dropping thetao's t/z when it is hidden), which
- * misaligns the preserved position array and breaks the view.
+ * Shared world coordinate space: x (°E), y (°N) and elevation (level index).
+ * Time is NOT here — it is a per-layer local dimension (`time'`), set through
+ * each layer's `localDimensions`/`localPosition`.
+ *
+ * It must be sent on EVERY update — including partial ones — to pin the
+ * dimension order. If a partial update omits it, Neuroglancer recomputes the
+ * coordinate space from the currently-visible layers (e.g. dropping elevation
+ * when only the 3-D sea-ice layer is shown), which misaligns the preserved
+ * position array and breaks the view.
  */
 const DIMENSIONS: Record<string, [number, string]> = {
 	x: [1, ""],
 	y: [1, ""],
-	z: [1, ""],
-	t: [1, ""],
-	tc: [1, ""],
+	elevation: [1, ""],
 };
 
 /**
  * Build the initial full CONFIG state.
  *
- * The shared world space has dimensions x (°E), y (°N), z (elevation index),
- * and the two independent time axes t (thetao) and tc (chl). Display dimensions
- * default to the first three (x, y, z), so the 4-panel layout shows the lon/lat
- * map plus lon/elevation and lat/elevation sections; t and tc are scrubbed via
- * the position widget. Position seeds an accessible slice: surface (z = 49) at
- * the time indices CMEMS currently serves (t = 423, tc = 635).
+ * Display dimensions default to the first three (x, y, elevation), so the
+ * 4-panel layout shows the lon/lat map plus lon/elevation and lat/elevation
+ * sections. Position must have one entry per entry in {@link DIMENSIONS} and
+ * seeds an accessible slice: lon 0°, lat 0°, surface (elevation index 0, which
+ * the transform maps from level 49). The time index is seeded per layer.
  */
 export function buildFullState(layers: Layer[]): ViewerStateJson {
 	return {
 		dimensions: DIMENSIONS,
 		oceanAxisUnits: { x: "°E", y: "°N" },
-		position: [0, 0, 49, 423, 635],
+		position: [0, 0, 0],
 		crossSectionScale: 0.9,
 		projectionScale: 2048,
 		layout: "4panel-alt",

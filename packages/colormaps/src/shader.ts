@@ -70,14 +70,32 @@ export function resolveShader(spec: ColormapSpec): string {
 		spec.noDataValue !== undefined
 			? `\n  if (value == ${glslFloat(spec.noDataValue)}) { emitTransparent(); return; }`
 			: "";
+	// CF packing: Neuroglancer hands the shader the RAW stored integer, so undo
+	// `scale_factor`/`add_offset` here — after the missing-data guards above
+	// (which are specified against the raw value) and before normalisation, so
+	// valueMin/valueMax are expressed in physical units.
+	const scaleFactor = spec.scaleFactor ?? 1;
+	const addOffset = spec.addOffset ?? 0;
+	const unpackLine =
+		scaleFactor !== 1 || addOffset !== 0
+			? `\n  value = value * ${glslFloat(scaleFactor)} + ${glslFloat(addOffset)};`
+			: "";
 
 	// Missing voxels render transparent (not black) so lower layers and the page
 	// background show through where a layer has no data (land, fill values).
+	//
+	// `getDataValue()` is typed after the source's data type: `float` for
+	// float32, but one of Neuroglancer's `int16_t`/`uint16_t`/… structs for
+	// integer arrays (CMEMS ships int16-packed ones). `toRaw()` unwraps the
+	// struct to a plain int/uint and is the identity on float, so this reads the
+	// raw stored value whatever the data type. Without it the shader fails to
+	// compile for integer sources and Neuroglancer silently falls back to its
+	// default grayscale shader.
 	return `${colormapGlsl(id)}
 void main() {
-  float value = getDataValue();
+  float value = float(toRaw(getDataValue()));
   if (value != value) { emitTransparent(); return; }
-  if (abs(value) > 1e30) { emitTransparent(); return; }${fillGuard}${logGuard}
+  if (abs(value) > 1e30) { emitTransparent(); return; }${fillGuard}${unpackLine}${logGuard}
   ${norm}${clampLine}${invertLine}
   emitRGB(cmap(t));
 }`;
