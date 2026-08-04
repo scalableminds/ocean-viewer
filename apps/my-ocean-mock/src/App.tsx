@@ -22,12 +22,6 @@ export function App() {
 					<button type="button" className="add-layer" tabIndex={-1}>
 						<span className="plus">+</span> Add layer…
 					</button>
-					<div className="header-icons">
-						<span title="Feedback">💬</span>
-						<span title="Share">🔗</span>
-						<span title="Upload">⬆️</span>
-						<span title="Info">ⓘ</span>
-					</div>
 				</header>
 
 				<div className="layer-list">
