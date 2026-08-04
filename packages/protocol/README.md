@@ -90,66 +90,158 @@ An unknown id falls back to `viridis`. The colour data behind each id lives in
 `@ocean-viewer/colormaps`, shared by the viewer's shaders and the portal's UI so
 that a layer's legend matches what is drawn on the map.
 
-A real `state`, as sent by the `my-ocean-mock` demo (see `apps/my-ocean-mock/src/layers.ts`):
+### Full example
+
+A real CONFIG message, exactly as the `my-ocean-mock` demo posts it (see `apps/my-ocean-mock/src/layers.ts`) — the `namespace`/`type`/`mode` envelope wrapping a full `state`. Three CMEMS ARCO zarr arrays from one product (`GLOBAL_MULTIYEAR_PHY_001_030`, daily 1/12°) share a world space of `x` (°E), `y` (°N) and `elevation` (level index):
 
 ```json
 {
-  "dimensions": { "x": [1, ""], "y": [1, ""], "z": [1, ""], "t": [1, ""], "tc": [1, ""] },
-  "oceanAxisUnits": { "x": "°E", "y": "°N" },
-  "position": [0, 0, 49, 423, 635],
-  "crossSectionScale": 0.9,
-  "projectionScale": 2048,
-  "layout": "4panel-alt",
-  "layers": [
-    {
-      "type": "image",
-      "name": "thetao",
-      "visible": true,
-      "source": {
-        "url": "https://s3.waw3-1.cloudferro.com/mdl-arco-time-012/arco/GLOBAL_ANALYSISFORECAST_PHY_001_024/cmems_mod_glo_phy-thetao_anfc_0.083deg_P1D-m_202406/timeChunked.zarr/thetao/|zarr2:",
-        "transform": {
-          "matrix": [
-            [0, 0, 0, 0.08333333333333333, -180],
-            [0, 0, -0.08333333333333333, 0, 80],
-            [0, 1, 0, 0, 0],
-            [1, 0, 0, 0, 0]
-          ],
-          "outputDimensions": { "x": [1, ""], "y": [1, ""], "z": [1, ""], "t": [1, ""] }
-        },
-        "enableDefaultSubsources": true
-      },
-      "oceanColormap": {
-        "colormapId": "magma",
-        "valueMin": 0,
-        "valueMax": 30,
-        "logScale": false,
-        "valueClamp": true
-      }
+  "namespace": "ocean-viewer",
+  "type": "CONFIG",
+  "state": {
+    "dimensions": {
+      "x": [1, ""],
+      "y": [1, ""],
+      "elevation": [1, ""]
     },
-    {
-      "type": "image",
-      "name": "deptho",
-      "visible": false,
-      "source": {
-        "url": "https://s3.waw3-1.cloudferro.com/mdl-arco-time-015/arco/GLOBAL_ANALYSISFORECAST_WAV_001_027/cmems_mod_wav_anfc_0.083deg_static_202211--ext--bathy/static.zarr/deptho/|zarr2:",
-        "transform": {
-          "matrix": [
-            [0, 0.08333333333333333, -180],
-            [-0.08333333333333333, 0, 80]
-          ],
-          "outputDimensions": { "x": [1, ""], "y": [1, ""] }
+    "oceanAxisUnits": {
+      "x": "°E",
+      "y": "°N"
+    },
+    "position": [0, 0, 0],
+    "crossSectionScale": 0.9,
+    "projectionScale": 2048,
+    "layout": "4panel-alt",
+    "layers": [
+      {
+        "type": "image",
+        "name": "so",
+        "visible": false,
+        "opacity": 1,
+        "source": {
+          "url": "https://s3.waw3-1.cloudferro.com/mdl-arco-time-025/arco/GLOBAL_MULTIYEAR_PHY_001_030/cmems_mod_glo_phy_my_0.083deg_P1D-m_202311/timeChunked.zarr/so/|zarr2:",
+          "transform": {
+            "matrix": [
+              [0, 0, 0, 0.08333333333333333, -180],
+              [0, 0, -0.08333333333333333, 0, 80],
+              [0, -1, 0, 0, 49],
+              [1, 0, 0, 0, 0]
+            ],
+            "outputDimensions": {
+              "x": [1, ""],
+              "y": [1, ""],
+              "elevation": [1, ""],
+              "time'": [1, ""]
+            }
+          },
+          "enableDefaultSubsources": true
         },
-        "enableDefaultSubsources": true
+        "localDimensions": {
+          "time'": [1, ""]
+        },
+        "localPosition": [12000],
+        "oceanColormap": {
+          "colormapId": "haline",
+          "valueMin": 0.0015,
+          "valueMax": 42.5,
+          "logScale": false,
+          "colormapInvert": false,
+          "valueClamp": true,
+          "noDataValue": -32767,
+          "scaleFactor": 0.0015259254723787308,
+          "addOffset": -0.0015259254723787308
+        }
       },
-      "oceanColormap": {
-        "colormapId": "viridis",
-        "valueMin": 0,
-        "valueMax": 300,
-        "logScale": false,
-        "valueClamp": true,
-        "noDataValue": -32767
+      {
+        "type": "image",
+        "name": "thetao",
+        "visible": true,
+        "opacity": 1,
+        "source": {
+          "url": "https://s3.waw3-1.cloudferro.com/mdl-arco-time-025/arco/GLOBAL_MULTIYEAR_PHY_001_030/cmems_mod_glo_phy_my_0.083deg_P1D-m_202311/timeChunked.zarr/thetao/|zarr2:",
+          "transform": {
+            "matrix": [
+              [0, 0, 0, 0.08333333333333333, -180],
+              [0, 0, -0.08333333333333333, 0, 80],
+              [0, -1, 0, 0, 49],
+              [1, 0, 0, 0, 0]
+            ],
+            "outputDimensions": {
+              "x": [1, ""],
+              "y": [1, ""],
+              "elevation": [1, ""],
+              "time'": [1, ""]
+            }
+          },
+          "enableDefaultSubsources": true
+        },
+        "localDimensions": {
+          "time'": [1, ""]
+        },
+        "localPosition": [12000],
+        "oceanColormap": {
+          "colormapId": "thermal",
+          "valueMin": -3,
+          "valueMax": 30,
+          "logScale": false,
+          "colormapInvert": false,
+          "valueClamp": true,
+          "noDataValue": -32767,
+          "scaleFactor": 0.0007324442267417908,
+          "addOffset": 21
+        }
+      },
+      {
+        "type": "image",
+        "name": "usi",
+        "visible": true,
+        "opacity": 1,
+        "source": {
+          "url": "https://s3.waw3-1.cloudferro.com/mdl-arco-time-025/arco/GLOBAL_MULTIYEAR_PHY_001_030/cmems_mod_glo_phy_my_0.083deg_P1D-m_202311/timeChunked.zarr/usi/|zarr2:",
+          "transform": {
+            "matrix": [
+              [0, 0, 0.08333333333333333, -180],
+              [0, -0.08333333333333333, 0, 80],
+              [1, 0, 0, 0]
+            ],
+            "outputDimensions": {
+              "x": [1, ""],
+              "y": [1, ""],
+              "time'": [1, ""]
+            }
+          },
+          "enableDefaultSubsources": true,
+          "subsources": {
+            "bounds": false
+          }
+        },
+        "localDimensions": {
+          "time'": [1, ""]
+        },
+        "localPosition": [12000],
+        "oceanColormap": {
+          "colormapId": "delta",
+          "valueMin": -1,
+          "valueMax": 1,
+          "logScale": false,
+          "colormapInvert": false,
+          "valueClamp": true,
+          "noDataValue": -32767,
+          "scaleFactor": 0.000030518509447574615,
+          "addOffset": 0
+        }
       }
-    }
-  ]
+    ]
+  },
+  "mode": "full"
 }
 ```
+
+Notes on the parts that are easy to get wrong:
+
+- **The transform matrix has `outputDimensions.length` rows and (array rank + 1) columns**, one output per array dimension, with the last column the translation. `so`/`thetao` are 4-D `(time, elevation, latitude, longitude)`; `usi` is 3-D `(time, latitude, longitude)` — sea-ice fields have no depth axis — so its transform is one row and one column smaller.
+- **Local dimensions end in `'`.** A dimension named `time'` in `outputDimensions` is kept out of the world space; the layer-level `localDimensions`/`localPosition` pair then pins the slice. Everything else is a world dimension and must appear in the top-level `dimensions`, whose length `position` must match.
+- **World dimensions come first**, in display order. Neuroglancer derives the global dimension order from the loaded layer *sources*, not from `dimensions`, and uses the first three as the 4-panel display axes.
+- **`y` and `elevation` are negated** because the panels draw the second and third display axes downwards. Here `y = -latitude` renders north-up, and `elevation = 49 - level` renders surface-up (the array's `elevation` coordinate ascends from -5727.9 m at index 0 to -0.494 m at index 49).
+- **`subsources` overrides individual subsources by id**; the ones it doesn't name follow `enableDefaultSubsources`. The zarr driver publishes two: `default` (the volume) and `bounds` (the yellow data-bounds box). A layer that omits a world dimension is unbounded along it, so its box becomes an edgeless slab filling the section panels — hence `"bounds": false` on `usi`.
+- **`scaleFactor`/`addOffset` carry the CF packing.** These arrays are int16; Neuroglancer reads the raw integer, so passing the packing lets `valueMin`/`valueMax` and `noDataValue` stay meaningful — the value range in physical units, the fill sentinel in raw ones.
