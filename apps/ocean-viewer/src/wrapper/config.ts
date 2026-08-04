@@ -16,9 +16,9 @@
  *               position/orientation/zoom unless the partial names them.
  */
 
+import { resolveStateColormaps } from "@ocean-viewer/colormaps/shader";
 import type { ConfigMessage, ViewerStateJson } from "@ocean-viewer/protocol";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
-import { resolveStateColormaps } from "./colormaps.js";
 import { setAxisUnits } from "./units.js";
 
 const PRESERVED_CAMERA_KEYS: ReadonlyArray<keyof ViewerStateJson> = [

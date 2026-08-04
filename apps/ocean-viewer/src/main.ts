@@ -2,8 +2,8 @@
 // (zarr, precomputed, n5, ...) and key-value stores with Neuroglancer.
 import "neuroglancer/unstable/main_module.js";
 
+import { resolveShader } from "@ocean-viewer/colormaps/shader";
 import { Bridge } from "./wrapper/bridge.js";
-import { resolveShader } from "./wrapper/colormaps.js";
 import { ConfigApplier } from "./wrapper/config.js";
 import { Reporter } from "./wrapper/report.js";
 import { installUnitLabels } from "./wrapper/units.js";

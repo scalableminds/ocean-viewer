@@ -285,6 +285,32 @@ body {
 	color: #3a3a42;
 }
 
+/* ---- Dev tools (mock-only, no counterpart in the real portal) ---- */
+.dev-tools {
+	display: flex;
+	gap: 8px;
+	padding: 10px 18px;
+	background: var(--settings-bg);
+	border-top: 1px solid var(--border);
+}
+
+.dev-tools button {
+	flex: 1 1 auto;
+	padding: 7px 10px;
+	font: inherit;
+	font-size: 12px;
+	color: var(--text);
+	background: #fff;
+	border: 1px solid #c8c9cf;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.dev-tools button:hover {
+	border-color: var(--blue-bright);
+	color: var(--blue-bright);
+}
+
 /* ---- Viewer ---- */
 .viewer {
 	flex: 1 1 auto;

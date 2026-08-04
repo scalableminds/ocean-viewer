@@ -3,7 +3,13 @@ import {
 	PROTOCOL_NAMESPACE,
 	type ViewerStateJson,
 } from "@ocean-viewer/protocol";
-import { useCallback, useEffect, useRef } from "react";
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useRef,
+} from "react";
 import { buildFullState } from "./stateBuilder";
 import type { Layer } from "./types";
 
@@ -26,6 +32,12 @@ const CAMERA_KEYS = [
 	"crossSectionDepth",
 ] as const;
 
+/** Imperative access to the state the frame would send right now. */
+export interface OceanViewerHandle {
+	/** The full CONFIG state for the current layers, camera included. */
+	getState(): ViewerStateJson;
+}
+
 interface Props {
 	layers: Layer[];
 	/** Called with the geographic coordinate of a click in the viewer. */
@@ -47,79 +59,89 @@ interface Props {
  * camera across edits, we cache the camera from inbound REPORTs and graft it
  * onto the full state we send.
  */
-export function OceanViewerFrame({ layers, onClick }: Props) {
-	const iframeRef = useRef<HTMLIFrameElement>(null);
-	const readyRef = useRef(false);
-	// Latest camera reported by the viewer after user interaction (pan/zoom).
-	const cameraRef = useRef<ViewerStateJson | null>(null);
-	// Always read the latest layers when (re)sending without re-binding handlers.
-	const layersRef = useRef(layers);
-	layersRef.current = layers;
+export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
+	function OceanViewerFrame({ layers, onClick }, ref) {
+		const iframeRef = useRef<HTMLIFrameElement>(null);
+		const readyRef = useRef(false);
+		// Latest camera reported by the viewer after user interaction (pan/zoom).
+		const cameraRef = useRef<ViewerStateJson | null>(null);
+		// Always read the latest layers when (re)sending without re-binding handlers.
+		const layersRef = useRef(layers);
+		layersRef.current = layers;
 
-	// Stable identity (only reads refs) so the effect below can list it as a
-	// dependency without re-firing on every render.
-	const post = useCallback((message: Omit<ConfigMessage, "namespace">) => {
-		const win = iframeRef.current?.contentWindow;
-		if (!win) return;
-		win.postMessage({ namespace: PROTOCOL_NAMESPACE, ...message }, "*");
-	}, []);
+		// Stable identity (only reads refs) so the effect below can list it as a
+		// dependency without re-firing on every render.
+		const post = useCallback((message: Omit<ConfigMessage, "namespace">) => {
+			const win = iframeRef.current?.contentWindow;
+			if (!win) return;
+			win.postMessage({ namespace: PROTOCOL_NAMESPACE, ...message }, "*");
+		}, []);
 
-	// Full state for the current layers, with the user's last camera grafted on.
-	// Stable identity (only reads refs/module constants), same reason as `post`.
-	const composeState = useCallback((layerList: Layer[]): ViewerStateJson => {
-		const state = buildFullState(layerList) as Record<string, unknown>;
-		const camera = cameraRef.current as Record<string, unknown> | null;
-		if (camera) {
-			for (const key of CAMERA_KEYS) {
-				if (key in camera) state[key] = camera[key];
+		// Full state for the current layers, with the user's last camera grafted on.
+		// Stable identity (only reads refs/module constants), same reason as `post`.
+		const composeState = useCallback((layerList: Layer[]): ViewerStateJson => {
+			const state = buildFullState(layerList) as Record<string, unknown>;
+			const camera = cameraRef.current as Record<string, unknown> | null;
+			if (camera) {
+				for (const key of CAMERA_KEYS) {
+					if (key in camera) state[key] = camera[key];
+				}
 			}
-		}
-		return state as ViewerStateJson;
-	}, []);
+			return state as ViewerStateJson;
+		}, []);
 
-	// Send the initial state once the iframe document has loaded. A short delay
-	// lets the viewer's bootstrap attach its postMessage bridge before we send.
-	const handleLoad = () => {
-		readyRef.current = false;
-		cameraRef.current = null;
-		window.setTimeout(() => {
-			post({
-				type: "CONFIG",
-				state: composeState(layersRef.current),
-				mode: "full",
-			});
-			readyRef.current = true;
-		}, 250);
-	};
+		// Let the parent read that same state (for the debug buttons) without having
+		// to duplicate the camera bookkeeping.
+		useImperativeHandle(
+			ref,
+			() => ({ getState: () => composeState(layersRef.current) }),
+			[composeState],
+		);
 
-	// Re-send a full state whenever the layers change.
-	useEffect(() => {
-		if (!readyRef.current) return;
-		post({ type: "CONFIG", state: composeState(layers), mode: "full" });
-	}, [layers, composeState, post]);
-
-	// Surface REPORT/CLICK messages coming back from the viewer.
-	useEffect(() => {
-		const onMessage = (event: MessageEvent) => {
-			const data = event.data;
-			if (!data || data.namespace !== PROTOCOL_NAMESPACE) return;
-			if (data.type === "REPORT" && data.state) {
-				cameraRef.current = data.state as ViewerStateJson;
-			} else if (data.type === "CLICK" && data.geographic) {
-				onClick?.(data.geographic);
-			}
+		// Send the initial state once the iframe document has loaded. A short delay
+		// lets the viewer's bootstrap attach its postMessage bridge before we send.
+		const handleLoad = () => {
+			readyRef.current = false;
+			cameraRef.current = null;
+			window.setTimeout(() => {
+				post({
+					type: "CONFIG",
+					state: composeState(layersRef.current),
+					mode: "full",
+				});
+				readyRef.current = true;
+			}, 250);
 		};
-		window.addEventListener("message", onMessage);
-		return () => window.removeEventListener("message", onMessage);
-	}, [onClick]);
 
-	return (
-		<iframe
-			ref={iframeRef}
-			className="viewer-frame"
-			src={VIEWER_URL}
-			title="Ocean Viewer"
-			onLoad={handleLoad}
-		/>
-	);
-}
+		// Re-send a full state whenever the layers change.
+		useEffect(() => {
+			if (!readyRef.current) return;
+			post({ type: "CONFIG", state: composeState(layers), mode: "full" });
+		}, [layers, composeState, post]);
+
+		// Surface REPORT/CLICK messages coming back from the viewer.
+		useEffect(() => {
+			const onMessage = (event: MessageEvent) => {
+				const data = event.data;
+				if (!data || data.namespace !== PROTOCOL_NAMESPACE) return;
+				if (data.type === "REPORT" && data.state) {
+					cameraRef.current = data.state as ViewerStateJson;
+				} else if (data.type === "CLICK" && data.geographic) {
+					onClick?.(data.geographic);
+				}
+			};
+			window.addEventListener("message", onMessage);
+			return () => window.removeEventListener("message", onMessage);
+		}, [onClick]);
+
+		return (
+			<iframe
+				ref={iframeRef}
+				className="viewer-frame"
+				src={VIEWER_URL}
+				title="Ocean Viewer"
+				onLoad={handleLoad}
+			/>
+		);
+	},
+);

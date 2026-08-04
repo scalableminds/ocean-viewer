@@ -14,15 +14,19 @@
  *
  * Neuroglancer only ships `colormapJet`/`colormapCubehelix` natively, so every
  * colormap the protocol names is compiled into the shader here, from the stop
- * lists in `@ocean-viewer/colormaps`.
+ * lists of this package.
+ *
+ * Lives here rather than in the viewer so the portal side can produce the same
+ * standard-Neuroglancer state — the mock's "open in Neuroglancer" needs it to
+ * hand an external instance a state it can render.
  */
 
-import { COLORMAP_STOPS, isColormapId } from "@ocean-viewer/colormaps";
 import type {
 	ColormapId,
 	ColormapSpec,
 	ViewerStateJson,
 } from "@ocean-viewer/protocol";
+import { COLORMAP_STOPS, isColormapId } from "./index";
 
 export type { ColormapId, ColormapSpec };
 

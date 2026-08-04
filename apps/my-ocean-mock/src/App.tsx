@@ -1,18 +1,39 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { LayerCard } from "./LayerCard";
 import { INITIAL_LAYERS } from "./layers";
-import { OceanViewerFrame } from "./OceanViewerFrame";
+import { toNeuroglancerUrl } from "./neuroglancerLink";
+import { OceanViewerFrame, type OceanViewerHandle } from "./OceanViewerFrame";
 import type { Layer } from "./types";
 
 export function App() {
 	const [layers, setLayers] = useState<Layer[]>(INITIAL_LAYERS);
 	const [expandedId, setExpandedId] = useState<string | null>(null);
 	const [clickInfo, setClickInfo] = useState<string | null>(null);
+	const viewerRef = useRef<OceanViewerHandle>(null);
 
 	const patchLayer = (id: string, patch: Partial<Layer>) => {
 		setLayers((prev) =>
 			prev.map((l) => (l.id === id ? { ...l, ...patch } : l)),
 		);
+	};
+
+	// Open the state currently driving the embedded viewer in a stock
+	// Neuroglancer, for comparing against a plain instance or sharing a link.
+	const openInNeuroglancer = () => {
+		const state = viewerRef.current?.getState();
+		if (!state) return;
+		window.open(toNeuroglancerUrl(state), "_blank", "noopener,noreferrer");
+	};
+
+	// Dump that same state to the console: the object for clicking through, and
+	// pretty JSON for copy-pasting into a bug report or the protocol docs.
+	const logState = () => {
+		const state = viewerRef.current?.getState();
+		if (!state) return;
+		console.groupCollapsed("[my-ocean-mock] CONFIG state");
+		console.log(state);
+		console.log(JSON.stringify(state, null, 2));
+		console.groupEnd();
 	};
 
 	return (
@@ -39,10 +60,20 @@ export function App() {
 				</div>
 
 				{clickInfo && <div className="click-readout">{clickInfo}</div>}
+
+				<div className="dev-tools">
+					<button type="button" onClick={openInNeuroglancer}>
+						Open in Neuroglancer ↗
+					</button>
+					<button type="button" onClick={logState}>
+						Log config
+					</button>
+				</div>
 			</aside>
 
 			<main className="viewer">
 				<OceanViewerFrame
+					ref={viewerRef}
 					layers={layers}
 					onClick={(geo) =>
 						setClickInfo(

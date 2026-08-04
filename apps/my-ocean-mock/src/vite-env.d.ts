@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
 	readonly VITE_VIEWER_URL?: string;
+	readonly VITE_NEUROGLANCER_URL?: string;
 }
 
 interface ImportMeta {
