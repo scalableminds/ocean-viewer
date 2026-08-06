@@ -55,9 +55,9 @@ an interactive parent-side harness, see
   (`CONFIG` / `READY` / `REPORT` / `CLICK` / `HOVER`, each with a `namespace: "ocean-viewer"` envelope,
   origin-restricted).
 - **Colormaps:** the portal can send a named colormap on an image layer via the
-  `oceanColormap` field (`{colormap, dataMin, dataMax, scale?, clamp?}`), which
-  the wrapper resolves into the layer `shader` before `restoreState`
-  ([src/wrapper/colormaps.ts](src/wrapper/colormaps.ts)). `colormap` may also be
+  `oceanColormap` field, which the wrapper resolves into the layer `shader`
+  before `restoreState`
+  ([@ocean-viewer/colormaps/shader](../../packages/colormaps/src/shader.ts)). `colormap` may also be
   a raw GLSL string (passed through). Missing/`NaN` voxels render black.
 - **Data sources:** Zarr via `https://…/array/|zarr2:`; plain Zarr has no
   spatial metadata, so axis orientation comes from the layer `source.transform`

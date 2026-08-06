@@ -27,9 +27,9 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
 | [src/wrapper/config.ts](src/wrapper/config.ts) | Apply CONFIG (full replace / partial merge) |
 | [src/wrapper/report.ts](src/wrapper/report.ts) | Debounced REPORT of viewer state |
 | [src/wrapper/pointer.ts](src/wrapper/pointer.ts) | CLICK / throttled HOVER with per-layer values |
-| [src/wrapper/colormaps.ts](src/wrapper/colormaps.ts) | Named colormap → GLSL shader resolver |
 | [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) | CONFIG / READY / REPORT / CLICK / HOVER message contract |
 | [@ocean-viewer/colormaps](../../packages/colormaps/src/index.ts) | Colour data behind each colormap id |
+| [@ocean-viewer/colormaps/shader](../../packages/colormaps/src/shader.ts) | Named colormap → GLSL shader resolver |
 | [src/chrome.css](src/chrome.css) | Hides Neuroglancer's built-in UI chrome (CSS-only) |
 
 ## Parent ↔ iframe protocol
