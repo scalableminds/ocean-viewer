@@ -16,12 +16,9 @@ import type { Layer } from "./types";
  * display dimension downwards; with `elevation = i_level` the ocean renders
  * upside down.
  *
- * Time is a per-layer LOCAL dimension (`time'`), not part of the world space —
- * both arrays are on the same daily axis, but keeping it local matches how
- * the portal will drive time (per layer, via CONFIG) and keeps the global
- * position array to x/y/elevation. Neuroglancer marks local dimensions by a
- * trailing apostrophe in the transform's `outputDimensions`; the layer-level
- * `localDimensions`/`localPosition` pair then pins the slice.
+ * Time is a shared GLOBAL dimension — both arrays are on the same daily axis,
+ * so it lives in the world space alongside x/y/elevation rather than as a
+ * per-layer local dimension.
  *
  * so/thetao are both 4-D (time, elevation, latitude, longitude). A source
  * transform's matrix is always `outputDimensions.length` rows × (input rank + 1)
@@ -32,8 +29,8 @@ import type { Layer } from "./types";
  * and uses the first three as the 4-panel display dimensions. Leading with
  * x/y/elevation guarantees the panels show the lon/lat map (+ elevation
  * sections) and that the position array stays aligned, regardless of which
- * layers are visible or load first. Local dimensions are excluded from the
- * global space, so `time'` may come last.
+ * layers are visible or load first. `time` trails last since it isn't part of
+ * the 4-panel display.
  *
  * All three arrays are CF-packed int16 (`<i2`): the physical value is
  * `raw * scaleFactor + addOffset`. Neuroglancer returns the raw integer, so the
@@ -54,28 +51,29 @@ const SALINITY_URL = `${DATASET}/so/|zarr2:`;
 /** CMEMS fill value shared by both packed arrays. */
 const FILL = -32767;
 
-/** Local time axis: one dimension, pinned to {@link TIME_INDEX}. */
-const LOCAL_TIME = {
-	localDimensions: { "time'": [1, ""] as [number, string] },
-	localPosition: [TIME_INDEX],
-};
+// Unused now that time is a global dimension (see {@link VOLUME_TRANSFORM});
+// kept for reference in case per-layer time pinning comes back.
+// const LOCAL_TIME = {
+// 	localDimensions: { "time'": [1, ""] as [number, string] },
+// 	localPosition: [TIME_INDEX],
+// };
 
 /**
  * Transform for the 4-D fields. Input dims: [time, elevation, latitude,
- * longitude]; output dims: [x, y, elevation, time'].
+ * longitude]; output dims: [x, y, elevation, time].
  */
 const VOLUME_TRANSFORM = {
 	outputDimensions: {
 		x: [1, ""] as [number, string],
 		y: [1, ""] as [number, string],
 		elevation: [1, ""] as [number, string],
-		"time'": [1, ""] as [number, string],
+		time: [1, ""] as [number, string],
 	},
 	matrix: [
 		[0, 0, 0, GRID_STEP, -180], // x = -180 + lon*step
 		[0, 0, -GRID_STEP, 0, 80], // y = 80 - lat*step (north-up)
 		[0, -1, 0, 0, N_LEVELS - 1], // elevation = 49 - level (surface-up)
-		[1, 0, 0, 0, 0], // time' = time index (local)
+		[1, 0, 0, 0, 0], // time = time index
 	],
 };
 
@@ -87,7 +85,6 @@ export const INITIAL_LAYERS: Layer[] = [
 		subtitle: "Global daily",
 		unit: "PSU",
 		source: { url: SALINITY_URL, ...VOLUME_TRANSFORM },
-		...LOCAL_TIME,
 		noData: FILL,
 		scaleFactor: 0.0015259254723787308,
 		addOffset: -0.0015259254723787308,
@@ -106,7 +103,6 @@ export const INITIAL_LAYERS: Layer[] = [
 		subtitle: "Global daily",
 		unit: "°C",
 		source: { url: TEMPERATURE_URL, ...VOLUME_TRANSFORM },
-		...LOCAL_TIME,
 		noData: FILL,
 		scaleFactor: 0.0007324442267417908,
 		addOffset: 21.0,

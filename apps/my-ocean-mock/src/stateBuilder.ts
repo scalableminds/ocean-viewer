@@ -55,9 +55,9 @@ export function layersToState(layers: Layer[]): NeuroglancerLayerJson[] {
 }
 
 /**
- * Shared world coordinate space: x (°E), y (°N) and elevation (level index).
- * Time is NOT here — it is a per-layer local dimension (`time'`), set through
- * each layer's `localDimensions`/`localPosition`.
+ * Shared world coordinate space: x (°E), y (°N), elevation (level index) and
+ * time (daily index) — all layers share one time axis, so it's global rather
+ * than a per-layer local dimension.
  *
  * It must be sent on EVERY update — including partial ones — to pin the
  * dimension order. If a partial update omits it, Neuroglancer recomputes the
@@ -69,6 +69,7 @@ const DIMENSIONS: Record<string, [number, string]> = {
 	x: [1, ""],
 	y: [1, ""],
 	elevation: [1, ""],
+	time: [1, ""],
 };
 
 /**
