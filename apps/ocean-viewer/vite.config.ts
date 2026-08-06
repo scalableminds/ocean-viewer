@@ -19,6 +19,9 @@ import { defineConfig } from "vite";
 const require = createRequire(import.meta.url);
 
 export default defineConfig({
+	// Emit relative asset URLs ("assets/…" instead of "/assets/…") so the built
+	// app can be served from any sub-path without rebuilding.
+	base: "./",
 	worker: {
 		format: "es",
 	},
