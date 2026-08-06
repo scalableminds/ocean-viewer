@@ -20,6 +20,7 @@ import { resolveStateColormaps } from "@ocean-viewer/colormaps/shader";
 import type { ConfigMessage, ViewerStateJson } from "@ocean-viewer/protocol";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
 import { setAxisUnits } from "./units.js";
+import { withOrthographicDefault } from "./viewer.js";
 
 const PRESERVED_CAMERA_KEYS: ReadonlyArray<keyof ViewerStateJson> = [
 	"position",
@@ -51,7 +52,13 @@ export class ConfigApplier {
 			setAxisUnits(oceanAxisUnits);
 		}
 		// Convert any `oceanColormap` layer fields into Neuroglancer `shader`s.
-		const state = resolveStateColormaps(rawState);
+		const resolved = resolveStateColormaps(rawState);
+		// A restored layout resets Neuroglancer's `orthographicProjection` flag, so
+		// re-assert our default whenever a CONFIG names a layout.
+		const state: ViewerStateJson =
+			resolved.layout === undefined
+				? resolved
+				: { ...resolved, layout: withOrthographicDefault(resolved.layout) };
 		try {
 			if (mode === "full") {
 				this.viewer.state.restoreState({ ...this.pristine, ...state });

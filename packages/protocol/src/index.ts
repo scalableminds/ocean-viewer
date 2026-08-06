@@ -127,6 +127,17 @@ export type DataPanelLayoutType =
 	| "yz-3d";
 
 /**
+ * The expanded (object) form of `layout`, adding the 3D panel's camera type and
+ * per-panel cross-section overrides to the shorthand string form's `type`.
+ */
+export interface DataPanelLayoutJson {
+	type: DataPanelLayoutType;
+	/** Orthographic instead of perspective 3D camera. Ocean Viewer defaults to `true`. */
+	orthographicProjection?: boolean;
+	crossSections?: Record<string, unknown>;
+}
+
+/**
  * The Neuroglancer viewer-state JSON schema (the `#!{...}` format), hand-typed
  * from Neuroglancer's JSON API docs:
  * https://neuroglancer-docs.web.app/json/api/index.html
@@ -154,7 +165,7 @@ export interface NeuroglancerViewerStateJson {
 	projectionScale?: number;
 	projectionDepth?: number;
 	layers?: NeuroglancerLayerJson[];
-	layout?: DataPanelLayoutType | Record<string, unknown>;
+	layout?: DataPanelLayoutType | DataPanelLayoutJson;
 	showAxisLines?: boolean;
 	wireFrame?: boolean;
 	showScaleBar?: boolean;

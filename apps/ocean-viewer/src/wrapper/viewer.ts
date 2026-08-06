@@ -9,7 +9,10 @@
  * once and hand it to the config applier as an initial full state.
  */
 
-import type { ViewerStateJson } from "@ocean-viewer/protocol";
+import type {
+	DataPanelLayoutJson,
+	ViewerStateJson,
+} from "@ocean-viewer/protocol";
 import {
 	bindDefaultCopyHandler,
 	bindDefaultPasteHandler,
@@ -17,6 +20,9 @@ import {
 import { setDefaultInputEventBindings } from "neuroglancer/unstable/ui/default_input_event_bindings.js";
 import { makeDefaultViewer } from "neuroglancer/unstable/ui/default_viewer.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
+
+/** Fallback when the layout being normalised doesn't name a type itself. */
+const DEFAULT_LAYOUT_TYPE = "4panel-alt";
 
 export function createViewer(target: HTMLElement): Viewer {
 	const viewer = makeDefaultViewer({
@@ -32,18 +38,40 @@ export function createViewer(target: HTMLElement): Viewer {
 	bindDefaultCopyHandler(viewer);
 	bindDefaultPasteHandler(viewer);
 
-	// Default the area outside the data (the slice / 3D background) to black.
-	// Set before the ConfigApplier captures the pristine state, so it persists
-	// across CONFIGs unless one explicitly overrides these colors.
+	// Black background outside the data, orthographic 3D camera. Set before the
+	// ConfigApplier captures the pristine state, so these persist across CONFIGs
+	// unless one explicitly overrides them.
+	const current = viewer.state.toJSON() as ViewerStateJson;
 	viewer.state.restoreState({
 		crossSectionBackgroundColor: "#000000",
 		projectionBackgroundColor: "#000000",
+		layout: withOrthographicDefault(current.layout),
 	});
 
 	// @ts-expect-error: Expose the viewer globally for debugging
 	window.viewer = viewer;
 
 	return viewer;
+}
+
+/**
+ * Expand a layout to the Ocean Viewer default of an orthographic 3D camera,
+ * honouring an explicit `orthographicProjection: false`.
+ *
+ * Neuroglancer keeps the camera type *inside* the layout state and resets it on
+ * every layout restore — including the shorthand string form (`"4panel-alt"`),
+ * which is why the flag has to be re-attached rather than just set once.
+ */
+export function withOrthographicDefault(
+	layout: ViewerStateJson["layout"],
+): DataPanelLayoutJson {
+	if (typeof layout === "string" || layout === undefined) {
+		return {
+			type: layout ?? DEFAULT_LAYOUT_TYPE,
+			orthographicProjection: true,
+		};
+	}
+	return { orthographicProjection: true, ...layout };
 }
 
 /**
