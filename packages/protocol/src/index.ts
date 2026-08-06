@@ -237,16 +237,72 @@ export interface GeographicCoordinate {
 	units?: Record<string, string>;
 }
 
-/** Outbound: viewer → portal. Mouse click with world + geographic coordinates. */
-export interface ClickMessage {
-	type: "CLICK";
-	/** Raw world-space position in the viewer's global coordinate space. */
+/** The value one layer has at a pointed-at position. */
+export interface LayerValue {
+	/** Layer name, as it appears in the viewer state's `layers[].name`. */
+	name: string;
+	/**
+	 * Value at the position, or `null` when the layer has none there — outside
+	 * its bounds, a chunk that hasn't loaded yet, or a non-finite voxel (NaN,
+	 * the missing-data convention).
+	 *
+	 * A number for single-channel volumes, an array for multi-channel ones, a
+	 * string for values that don't survive JSON (segmentation ids are `bigint`).
+	 * This is the RAW stored value: {@link ColormapSpec}'s `scaleFactor` /
+	 * `addOffset` packing is not applied, and neither is `noDataValue` — a voxel
+	 * equal to that sentinel is reported as the sentinel, not as `null`.
+	 */
+	value: number | number[] | string | null;
+}
+
+/**
+ * What the pointer is over: the position, and what each visible layer holds
+ * there. Shared payload of {@link ClickMessage} and {@link HoverMessage}.
+ */
+export interface PointerSample {
+	/**
+	 * Raw world-space position in the viewer's global coordinate space, in the
+	 * axis order of that state's `dimensions`.
+	 */
 	world: number[];
-	geographic: GeographicCoordinate;
+	/** One entry per visible layer, in viewer order. */
+	layers: LayerValue[];
+}
+
+/**
+ * Outbound: viewer → portal. A click inside a data panel.
+ *
+ * Only emitted for an actual click: a pan/rotate drag ends with a DOM click too,
+ * and those are filtered out.
+ *
+ * {@link geographic} is not populated yet — the wrapper currently reports only
+ * the {@link PointerSample} fields.
+ */
+export interface ClickMessage extends PointerSample {
+	type: "CLICK";
+	geographic?: GeographicCoordinate;
+}
+
+/**
+ * Outbound: viewer → portal. The pointer moved over the data — same payload as
+ * {@link ClickMessage}, for driving a live readout.
+ *
+ * Throttled by the viewer (see `wrapper/pointer.ts`), and only sent while the
+ * pointer is over a data panel with a valid position under it. There is no
+ * "pointer left the data" message: the last HOVER stands until the next one, so
+ * a readout built from these should be cleared on the portal's own mouse-out if
+ * that matters.
+ */
+export interface HoverMessage extends PointerSample {
+	type: "HOVER";
 }
 
 export type InboundMessage = ConfigMessage;
-export type OutboundMessage = ReadyMessage | ReportMessage | ClickMessage;
+export type OutboundMessage =
+	| ReadyMessage
+	| ReportMessage
+	| ClickMessage
+	| HoverMessage;
 
 /** Full message as it travels over `postMessage`: the payload plus `namespace`. */
 export type Message<M extends { type: string }> = M & {

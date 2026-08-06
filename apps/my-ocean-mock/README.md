@@ -17,8 +17,8 @@ it as an interactive harness when developing the viewer's CONFIG handling.
   iframe. The first message is a `full` CONFIG (dimensions, camera, axis units,
   layers); subsequent changes are `partial` CONFIGs carrying only `layers`, so
   the viewer keeps the user's current camera position and zoom.
-- **Click readout**: shows the geographic lon/lat/depth from viewer `CLICK`
-  messages.
+- **Pointer readout**: the world position and per-layer value from the viewer's
+  `HOVER` (live, follows the cursor) and `CLICK` (pinned) messages.
 
 The translation from UI layer → Neuroglancer image layer (+ the `oceanColormap`
 extension) lives in [src/protocol.ts](src/protocol.ts).

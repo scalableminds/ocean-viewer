@@ -276,13 +276,41 @@ body {
 }
 
 /* ---- Click readout ---- */
-.click-readout {
+.pointer-readouts {
 	padding: 8px 18px;
 	font-size: 12px;
 	font-family: ui-monospace, monospace;
 	background: #fff;
 	border-top: 1px solid var(--border);
 	color: #3a3a42;
+}
+
+.pointer-readout + .pointer-readout {
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px dashed var(--border);
+}
+
+.pointer-position {
+	margin-bottom: 4px;
+	color: #6a6a76;
+}
+
+.pointer-label {
+	display: inline-block;
+	min-width: 48px;
+	font-weight: 600;
+	color: #3a3a42;
+}
+
+.pointer-layer {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.pointer-value {
+	font-variant-numeric: tabular-nums;
 }
 
 /* ---- Dev tools (mock-only, no counterpart in the real portal) ---- */

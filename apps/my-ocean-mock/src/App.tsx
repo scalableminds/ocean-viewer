@@ -1,3 +1,9 @@
+import type {
+	ClickMessage,
+	HoverMessage,
+	LayerValue,
+	PointerSample,
+} from "@ocean-viewer/protocol";
 import { useRef, useState } from "react";
 import { LayerCard } from "./LayerCard";
 import { INITIAL_LAYERS } from "./layers";
@@ -5,10 +11,56 @@ import { toNeuroglancerUrl } from "./neuroglancerLink";
 import { OceanViewerFrame, type OceanViewerHandle } from "./OceanViewerFrame";
 import type { Layer } from "./types";
 
+/**
+ * Axis labels for a pointer sample's `world` array. The protocol sends bare
+ * numbers in the state's `dimensions` order — which for this harness is the
+ * fixed x / y / elevation space that `stateBuilder` pins on every CONFIG.
+ */
+const WORLD_AXES = ["x", "y", "elevation"];
+
+function formatWorld(world: number[]): string {
+	return world
+		.map((v, i) => `${WORLD_AXES[i] ?? `d${i}`} ${v.toFixed(3)}`)
+		.join(", ");
+}
+
+function formatValue(value: LayerValue["value"]): string {
+	if (value === null) return "—";
+	if (typeof value === "number") return value.toPrecision(6);
+	if (Array.isArray(value))
+		return value.map((v) => v.toPrecision(6)).join(", ");
+	return value;
+}
+
+/** Position + per-layer values of one CLICK or HOVER. */
+function PointerReadout({
+	label,
+	sample,
+}: {
+	label: string;
+	sample: PointerSample;
+}) {
+	return (
+		<div className="pointer-readout">
+			<div className="pointer-position">
+				<span className="pointer-label">{label}</span>
+				{formatWorld(sample.world)}
+			</div>
+			{sample.layers.map((layer) => (
+				<div key={layer.name} className="pointer-layer">
+					<span>{layer.name}</span>
+					<span className="pointer-value">{formatValue(layer.value)}</span>
+				</div>
+			))}
+		</div>
+	);
+}
+
 export function App() {
 	const [layers, setLayers] = useState<Layer[]>(INITIAL_LAYERS);
 	const [expandedId, setExpandedId] = useState<string | null>(null);
-	const [clickInfo, setClickInfo] = useState<string | null>(null);
+	const [click, setClick] = useState<ClickMessage | null>(null);
+	const [hover, setHover] = useState<HoverMessage | null>(null);
 	const viewerRef = useRef<OceanViewerHandle>(null);
 
 	const patchLayer = (id: string, patch: Partial<Layer>) => {
@@ -59,7 +111,12 @@ export function App() {
 					))}
 				</div>
 
-				{clickInfo && <div className="click-readout">{clickInfo}</div>}
+				{(hover || click) && (
+					<div className="pointer-readouts">
+						{hover && <PointerReadout label="hover" sample={hover} />}
+						{click && <PointerReadout label="click" sample={click} />}
+					</div>
+				)}
 
 				<div className="dev-tools">
 					<button type="button" onClick={openInNeuroglancer}>
@@ -75,11 +132,8 @@ export function App() {
 				<OceanViewerFrame
 					ref={viewerRef}
 					layers={layers}
-					onClick={(geo) =>
-						setClickInfo(
-							`lon ${geo.longitude.toFixed(3)}°, lat ${geo.latitude.toFixed(3)}°, depth ${geo.depth.toFixed(1)} m`,
-						)
-					}
+					onClick={setClick}
+					onHover={setHover}
 				/>
 			</main>
 		</div>

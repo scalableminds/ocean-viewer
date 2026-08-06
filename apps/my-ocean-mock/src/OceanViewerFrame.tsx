@@ -1,5 +1,7 @@
 import {
+	type ClickMessage,
 	type ConfigMessage,
+	type HoverMessage,
 	PROTOCOL_NAMESPACE,
 	type ViewerStateJson,
 } from "@ocean-viewer/protocol";
@@ -40,12 +42,10 @@ export interface OceanViewerHandle {
 
 interface Props {
 	layers: Layer[];
-	/** Called with the geographic coordinate of a click in the viewer. */
-	onClick?: (geo: {
-		longitude: number;
-		latitude: number;
-		depth: number;
-	}) => void;
+	/** Called with each CLICK the viewer reports (position + per-layer values). */
+	onClick?: (click: ClickMessage) => void;
+	/** Called with each (throttled) HOVER the viewer reports. */
+	onHover?: (hover: HoverMessage) => void;
 }
 
 /**
@@ -60,7 +60,7 @@ interface Props {
  * onto the full state we send.
  */
 export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
-	function OceanViewerFrame({ layers, onClick }, ref) {
+	function OceanViewerFrame({ layers, onClick, onHover }, ref) {
 		const iframeRef = useRef<HTMLIFrameElement>(null);
 		const readyRef = useRef(false);
 		// Latest camera reported by the viewer after user interaction (pan/zoom).
@@ -114,7 +114,7 @@ export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
 			post({ type: "CONFIG", state: composeState(layers), mode: "full" });
 		}, [layers, composeState, post]);
 
-		// Surface READY/REPORT/CLICK messages coming back from the viewer.
+		// Surface READY/REPORT/CLICK/HOVER messages coming back from the viewer.
 		useEffect(() => {
 			const onMessage = (event: MessageEvent) => {
 				const data = event.data;
@@ -128,13 +128,15 @@ export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
 					});
 				} else if (data.type === "REPORT" && data.state) {
 					cameraRef.current = data.state as ViewerStateJson;
-				} else if (data.type === "CLICK" && data.geographic) {
-					onClick?.(data.geographic);
+				} else if (data.type === "CLICK") {
+					onClick?.(data as ClickMessage);
+				} else if (data.type === "HOVER") {
+					onHover?.(data as HoverMessage);
 				}
 			};
 			window.addEventListener("message", onMessage);
 			return () => window.removeEventListener("message", onMessage);
-		}, [onClick, post, composeState]);
+		}, [onClick, onHover, post, composeState]);
 
 		return (
 			<iframe

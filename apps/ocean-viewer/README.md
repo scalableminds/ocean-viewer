@@ -26,8 +26,9 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
 | [src/wrapper/bridge.ts](src/wrapper/bridge.ts) | Origin-restricted `postMessage` in/out |
 | [src/wrapper/config.ts](src/wrapper/config.ts) | Apply CONFIG (full replace / partial merge) |
 | [src/wrapper/report.ts](src/wrapper/report.ts) | Debounced REPORT of viewer state |
+| [src/wrapper/pointer.ts](src/wrapper/pointer.ts) | CLICK / throttled HOVER with per-layer values |
 | [src/wrapper/colormaps.ts](src/wrapper/colormaps.ts) | Named colormap → GLSL shader resolver |
-| [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) | CONFIG / READY / REPORT / CLICK message contract |
+| [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) | CONFIG / READY / REPORT / CLICK / HOVER message contract |
 | [@ocean-viewer/colormaps](../../packages/colormaps/src/index.ts) | Colour data behind each colormap id |
 | [src/chrome.css](src/chrome.css) | Hides Neuroglancer's built-in UI chrome (CSS-only) |
 
@@ -39,7 +40,16 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
 - **READY** (outbound): sent once when the viewer is initialised and the bridge is
   listening. The parent should wait for it before sending its first CONFIG.
 - **REPORT** (outbound): debounced serialised state after user interaction.
-- **CLICK** (outbound): world coordinates converted to geographic lon/lat/depth.
+- **CLICK** (outbound): the global-coordinate position clicked in a data panel,
+  plus the raw value each visible layer has there. Drags (pan/rotate) are not
+  clicks. The `geographic` lon/lat/depth conversion is not implemented yet.
+- **HOVER** (outbound): the same payload as CLICK as the pointer moves over the
+  data, throttled to one message per 100 ms (leading edge plus a trailing send)
+  and skipped when the readout is unchanged.
+
+Neither CLICK nor HOVER is emitted unless Neuroglancer has a valid picked
+position under the cursor, so the pointer has to move once after a CONFIG
+rebuilds the panels before the first one lands.
 
 Set the allowed parent origin at build time via `VITE_PARENT_ORIGIN`; otherwise
 the bridge locks onto the first valid sender.

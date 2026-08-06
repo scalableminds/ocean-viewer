@@ -5,6 +5,7 @@ import "neuroglancer/unstable/main_module.js";
 import { resolveShader } from "@ocean-viewer/colormaps/shader";
 import { Bridge } from "./wrapper/bridge.js";
 import { ConfigApplier } from "./wrapper/config.js";
+import { PointerForwarder } from "./wrapper/pointer.js";
 import { Reporter } from "./wrapper/report.js";
 import { installUnitLabels } from "./wrapper/units.js";
 import { createViewer, parseHashState } from "./wrapper/viewer.js";
@@ -20,6 +21,8 @@ import "./chrome.css";
  *   - inbound CONFIG  → applied to the viewer state (full or partial)
  *   - outbound READY  → sent once when the bridge is listening
  *   - outbound REPORT → debounced serialised state after user interaction
+ *   - outbound CLICK  → position + per-layer values for a click in a data panel
+ *   - outbound HOVER  → the same, throttled, as the pointer moves over the data
  */
 function bootstrap(): void {
 	const target = document.getElementById("neuroglancer-container");
@@ -64,6 +67,8 @@ function bootstrap(): void {
 	reporter = new Reporter(viewer, bridge);
 	// Don't report the initial (seed) state as if it were a user interaction.
 	reporter.captureBaseline();
+
+	new PointerForwarder(viewer, bridge);
 
 	// Everything is wired up and the bridge is listening: tell the parent it can
 	// send CONFIG now, so it doesn't have to guess with a timeout.
