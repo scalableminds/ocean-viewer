@@ -9,6 +9,7 @@ import { PointerForwarder } from "./wrapper/pointer.js";
 import { Reporter } from "./wrapper/report.js";
 import { installUnitLabels } from "./wrapper/units.js";
 import { createViewer, parseHashState } from "./wrapper/viewer.js";
+import { ViewportControls } from "./wrapper/viewport-controls.js";
 
 // Loaded last so these rules override Neuroglancer's own stylesheet.
 import "./chrome.css";
@@ -23,6 +24,9 @@ import "./chrome.css";
  *   - outbound REPORT → debounced serialised state after user interaction
  *   - outbound CLICK  → position + per-layer values for a click in a data panel
  *   - outbound HOVER  → the same, throttled, as the pointer moves over the data
+ *
+ * It also overlays the 3D panel with camera reset / axis-align buttons, since
+ * Neuroglancer's own recovery affordances are hidden chrome or key bindings.
  */
 function bootstrap(): void {
 	const target = document.getElementById("neuroglancer-container");
@@ -32,6 +36,7 @@ function bootstrap(): void {
 
 	const viewer = createViewer(target);
 	installUnitLabels(viewer);
+	new ViewportControls(viewer);
 	// Expose for debugging / automation (parity with Neuroglancer's default setup).
 	(window as unknown as { viewer: unknown; oceanViewer: unknown }).viewer =
 		viewer;

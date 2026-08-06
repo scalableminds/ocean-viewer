@@ -51,6 +51,41 @@
 	display: none !important;
 }
 
+/* Camera buttons overlaid on the 3D panel (injected by
+   wrapper/viewport-controls.ts). The panel is already `position: relative`, and
+   the controls Neuroglancer normally puts in this corner are hidden above. */
+.ocean-viewport-controls {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	z-index: 1;
+	display: flex;
+	gap: 2px;
+	padding: 2px;
+	border-radius: 4px;
+	background: rgb(0 0 0 / 45%);
+	font-family: sans-serif;
+}
+
+.ocean-viewport-controls button {
+	min-width: 22px;
+	padding: 2px 4px;
+	border: 0;
+	border-radius: 2px;
+	background: transparent;
+	color: #9aa0a6;
+	font: inherit;
+	font-size: 11px;
+	line-height: 1.4;
+	/* The panel sets `cursor: crosshair` on everything inside it. */
+	cursor: pointer;
+}
+
+.ocean-viewport-controls button:hover {
+	background: rgb(255 255 255 / 15%);
+	color: #fff;
+}
+
 /* Physical-unit suffix appended after each X/Y/Z coordinate readout
    (injected by wrapper/units.ts from the coordinate space's units). */
 .ocean-unit-label {

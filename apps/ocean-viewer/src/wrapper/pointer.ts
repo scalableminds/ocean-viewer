@@ -14,17 +14,24 @@
  *
  * Nothing is emitted unless Neuroglancer has a valid picked position under the
  * cursor (`mouseState.active`). The panels set that up on mouse move and drop it
- * on mouse out, so clicks on the viewer's own UI chrome never report — that is
- * the gate, rather than inspecting the event target. It also means the pointer
- * has to move once after a CONFIG rebuilds the panels before the first
- * click/hover lands: until those panels have redrawn there is no pick data to
- * read, and inventing a position from stale data would be worse than silence.
+ * on mouse out, so clicks on Neuroglancer's own UI chrome never report. It also
+ * means the pointer has to move once after a CONFIG rebuilds the panels before
+ * the first click/hover lands: until those panels have redrawn there is no pick
+ * data to read, and inventing a position from stale data would be worse than
+ * silence.
+ *
+ * That gate does not cover chrome the Ocean wrapper injects *inside* a panel
+ * (the 3D viewport's camera buttons), where the pick stays valid the whole time.
+ * Those are excluded by target instead. It has to happen here rather than by
+ * stopping propagation at the overlay: these listeners are on `viewer.element`
+ * in the capture phase, so they run before the overlay's own handlers.
  */
 
 import type { LayerValue, PointerSample } from "@ocean-viewer/protocol";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
 
 import type { Bridge } from "./bridge.js";
+import { OVERLAY_ATTRIBUTE } from "./viewport-controls.js";
 
 /** Pointer travel (px) between press and release still counted as a click. */
 const CLICK_SLOP_PX = 4;
@@ -72,6 +79,9 @@ export class PointerForwarder {
 	};
 
 	private readonly handleClick = (event: MouseEvent): void => {
+		if (isOverlayEvent(event)) {
+			return;
+		}
 		if (
 			Math.abs(event.clientX - this.downX) > CLICK_SLOP_PX ||
 			Math.abs(event.clientY - this.downY) > CLICK_SLOP_PX
@@ -165,6 +175,15 @@ export class PointerForwarder {
 		}
 		return values;
 	}
+}
+
+/** Whether an event originated in UI the Ocean wrapper injected over a panel. */
+function isOverlayEvent(event: Event): boolean {
+	const target = event.target;
+	return (
+		target instanceof Element &&
+		target.closest(`[${OVERLAY_ATTRIBUTE}]`) !== null
+	);
 }
 
 /**
