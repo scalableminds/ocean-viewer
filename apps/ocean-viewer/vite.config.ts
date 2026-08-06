@@ -1,5 +1,6 @@
 import { createRequire } from "node:module";
 import { defineConfig } from "vite";
+import { stripWebpackMagicComments } from "./vite-plugins/strip-webpack-magic-comments";
 
 // Neuroglancer spawns ES-module Web Workers via
 //   `new Worker(new URL("./chunk_worker.bundle.js", import.meta.url), { type: "module" })`
@@ -22,8 +23,11 @@ export default defineConfig({
 	// Emit relative asset URLs ("assets/…" instead of "/assets/…") so the built
 	// app can be served from any sub-path without rebuilding.
 	base: "./",
+	plugins: [stripWebpackMagicComments()],
 	worker: {
 		format: "es",
+		// Worker sub-builds don't inherit the plugins above.
+		plugins: () => [stripWebpackMagicComments()],
 	},
 	server: {
 		hmr: false,
