@@ -103,7 +103,7 @@ that a layer's legend matches what is drawn on the map.
 
 ### Full example
 
-A real CONFIG message, exactly as the `my-ocean-mock` demo posts it (see `apps/my-ocean-mock/src/layers.ts`) — the `namespace`/`type`/`mode` envelope wrapping a full `state`. Three CMEMS ARCO zarr arrays from one product (`GLOBAL_MULTIYEAR_PHY_001_030`, daily 1/12°) share a world space of `x` (°E), `y` (°N) and `elevation` (level index):
+A real CONFIG message, exactly as the `my-ocean-mock` demo posts it (see `apps/my-ocean-mock/src/layers.ts`) — the `namespace`/`type`/`mode` envelope wrapping a full `state`. Two CMEMS ARCO zarr arrays from one product (`GLOBAL_MULTIYEAR_PHY_001_030`, daily 1/12°) share a world space of `x` (°E), `y` (°N) and `elevation` (level index):
 
 ```json
 {
@@ -201,46 +201,6 @@ A real CONFIG message, exactly as the `my-ocean-mock` demo posts it (see `apps/m
           "scaleFactor": 0.0007324442267417908,
           "addOffset": 21
         }
-      },
-      {
-        "type": "image",
-        "name": "usi",
-        "visible": true,
-        "opacity": 1,
-        "source": {
-          "url": "https://s3.waw3-1.cloudferro.com/mdl-arco-time-025/arco/GLOBAL_MULTIYEAR_PHY_001_030/cmems_mod_glo_phy_my_0.083deg_P1D-m_202311/timeChunked.zarr/usi/|zarr2:",
-          "transform": {
-            "matrix": [
-              [0, 0, 0.08333333333333333, -180],
-              [0, -0.08333333333333333, 0, 80],
-              [1, 0, 0, 0]
-            ],
-            "outputDimensions": {
-              "x": [1, ""],
-              "y": [1, ""],
-              "time'": [1, ""]
-            }
-          },
-          "enableDefaultSubsources": true,
-          "subsources": {
-            "bounds": false
-          }
-        },
-        "localDimensions": {
-          "time'": [1, ""]
-        },
-        "localPosition": [12000],
-        "oceanColormap": {
-          "colormapId": "delta",
-          "valueMin": -1,
-          "valueMax": 1,
-          "logScale": false,
-          "colormapInvert": false,
-          "valueClamp": true,
-          "noDataValue": -32767,
-          "scaleFactor": 0.000030518509447574615,
-          "addOffset": 0
-        }
       }
     ]
   },
@@ -250,9 +210,9 @@ A real CONFIG message, exactly as the `my-ocean-mock` demo posts it (see `apps/m
 
 Notes on the parts that are easy to get wrong:
 
-- **The transform matrix has `outputDimensions.length` rows and (array rank + 1) columns**, one output per array dimension, with the last column the translation. `so`/`thetao` are 4-D `(time, elevation, latitude, longitude)`; `usi` is 3-D `(time, latitude, longitude)` — sea-ice fields have no depth axis — so its transform is one row and one column smaller.
+- **The transform matrix has `outputDimensions.length` rows and (array rank + 1) columns**, one output per array dimension, with the last column the translation. `so`/`thetao` are both 4-D `(time, elevation, latitude, longitude)`; a lower-rank array (say a 3-D surface field with no depth axis) gets a transform one row and one column smaller.
 - **Local dimensions end in `'`.** A dimension named `time'` in `outputDimensions` is kept out of the world space; the layer-level `localDimensions`/`localPosition` pair then pins the slice. Everything else is a world dimension and must appear in the top-level `dimensions`, whose length `position` must match.
 - **World dimensions come first**, in display order. Neuroglancer derives the global dimension order from the loaded layer *sources*, not from `dimensions`, and uses the first three as the 4-panel display axes.
 - **`y` and `elevation` are negated** because the panels draw the second and third display axes downwards. Here `y = -latitude` renders north-up, and `elevation = 49 - level` renders surface-up (the array's `elevation` coordinate ascends from -5727.9 m at index 0 to -0.494 m at index 49).
-- **`subsources` overrides individual subsources by id**; the ones it doesn't name follow `enableDefaultSubsources`. The zarr driver publishes two: `default` (the volume) and `bounds` (the yellow data-bounds box). A layer that omits a world dimension is unbounded along it, so its box becomes an edgeless slab filling the section panels — hence `"bounds": false` on `usi`.
+- **`subsources` overrides individual subsources by id**; the ones it doesn't name follow `enableDefaultSubsources`. The zarr driver publishes two: `default` (the volume) and `bounds` (the yellow data-bounds box). A layer that omits a world dimension is unbounded along it, so its box becomes an edgeless slab filling the section panels — such a layer wants `"bounds": false`.
 - **`scaleFactor`/`addOffset` carry the CF packing.** These arrays are int16; Neuroglancer reads the raw integer, so passing the packing lets `valueMin`/`valueMax` and `noDataValue` stay meaningful — the value range in physical units, the fill sentinel in raw ones.
