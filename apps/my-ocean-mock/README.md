@@ -72,6 +72,10 @@ time axes. Default position seeds an accessible surface slice (`z = 49`,
   dimension order from whichever layers are visible and scrambles the axes. The
   mock always sends a full state and grafts the user's camera back on from
   inbound `REPORT`s (see [src/OceanViewerFrame.tsx](src/OceanViewerFrame.tsx)).
+- **The first CONFIG waits for `READY`, not `load`.** The iframe's `load` event
+  fires before the viewer's bootstrap has attached its bridge, so a CONFIG sent
+  there is dropped. The viewer posts a `READY` message once it is listening; the
+  mock sends the initial full state in response to it.
 - **Partial CMEMS access.** Only some time/elevation chunks are served (the
   deepest level and many time steps return 403); the seeded slice is known-good.
 - Colour-map swatches and colour bars are CSS gradients built from the same

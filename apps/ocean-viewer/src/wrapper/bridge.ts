@@ -48,11 +48,31 @@ export class Bridge {
 			// No origin established yet; refuse to broadcast to "*".
 			return;
 		}
+		this.post(message, targetOrigin);
+	}
+
+	/**
+	 * Announce that the viewer is initialised and listening, so the parent can
+	 * send its first CONFIG instead of waiting out a timeout.
+	 *
+	 * Sent before any inbound message, so the handshake has not yet established
+	 * an origin: without a build-time `VITE_PARENT_ORIGIN` this is the one
+	 * message we broadcast to "*". READY has no payload, so that discloses
+	 * nothing beyond the iframe's existence — which the embedder already knows.
+	 */
+	sendReady(): void {
+		if (this.parent === null) {
+			return;
+		}
+		this.post({ type: "READY" }, this.lockedOrigin ?? "*");
+	}
+
+	private post(message: OutboundMessage, targetOrigin: string): void {
 		const envelope: Message<OutboundMessage> = {
 			namespace: PROTOCOL_NAMESPACE,
 			...message,
 		};
-		this.parent.postMessage(envelope, targetOrigin);
+		this.parent?.postMessage(envelope, targetOrigin);
 	}
 
 	private readonly handleMessage = (event: MessageEvent): void => {

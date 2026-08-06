@@ -27,7 +27,7 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
 | [src/wrapper/config.ts](src/wrapper/config.ts) | Apply CONFIG (full replace / partial merge) |
 | [src/wrapper/report.ts](src/wrapper/report.ts) | Debounced REPORT of viewer state |
 | [src/wrapper/colormaps.ts](src/wrapper/colormaps.ts) | Named colormap → GLSL shader resolver |
-| [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) | CONFIG / REPORT / CLICK message contract |
+| [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) | CONFIG / READY / REPORT / CLICK message contract |
 | [@ocean-viewer/colormaps](../../packages/colormaps/src/index.ts) | Colour data behind each colormap id |
 | [src/chrome.css](src/chrome.css) | Hides Neuroglancer's built-in UI chrome (CSS-only) |
 
@@ -36,6 +36,8 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
 - **CONFIG** (inbound): a Neuroglancer state JSON. First message is a full state;
   later messages are partial updates merged onto the current state, preserving
   camera position/orientation unless explicitly included.
+- **READY** (outbound): sent once when the viewer is initialised and the bridge is
+  listening. The parent should wait for it before sending its first CONFIG.
 - **REPORT** (outbound): debounced serialised state after user interaction.
 - **CLICK** (outbound): world coordinates converted to geographic lon/lat/depth.
 

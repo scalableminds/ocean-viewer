@@ -11,20 +11,31 @@ Every message is a plain JSON object:
 ```ts
 type Message = {
   namespace: "ocean-viewer";
-  type: "CONFIG" | "REPORT" | "CLICK";
+  type: "CONFIG" | "READY" | "REPORT" | "CLICK";
   state: ViewerStateJson;
 };
 ```
 
-`type` discriminates the payload: `"CONFIG"` (inbound), `"REPORT"` | `"CLICK"` (outbound). This shape check alone only distinguishes Ocean Viewer traffic from other `postMessage` noise on the same window — it doesn't check sender origin. The viewer's bridge does that separately: it locks onto the parent's origin (configured at build time, or the first valid sender as a handshake) and rejects every other origin after that.
+`type` discriminates the payload: `"CONFIG"` (inbound), `"READY"` | `"REPORT"` | `"CLICK"` (outbound). This shape check alone only distinguishes Ocean Viewer traffic from other `postMessage` noise on the same window — it doesn't check sender origin. The viewer's bridge does that separately: it locks onto the parent's origin (configured at build time, or the first valid sender as a handshake) and rejects every other origin after that.
 
 ## Messages
 
 | Direction | Type | Purpose |
 |---|---|---|
 | Portal → Viewer | `CONFIG` | Set or update viewer state |
+| Viewer → Portal | `READY` | Viewer initialized; CONFIG can be sent |
 | Viewer → Portal | `REPORT` | Full state after user interaction |
 | Viewer → Portal | `CLICK` | World + geographic position of a click |
+
+### READY
+
+```ts
+{ type: "READY" }
+```
+
+Sent exactly once per viewer document, as soon as Neuroglancer is created and the bridge is listening. The portal should send its first CONFIG in response to this rather than on the iframe's `load` event (which fires before the viewer's bootstrap runs) or after a fixed delay.
+
+READY precedes any inbound message, so the origin handshake has not happened yet: unless the viewer was built with a fixed `VITE_PARENT_ORIGIN`, it is the only message posted with a `*` target origin. It carries no payload. A portal that wants to be strict should still check `event.origin` against the viewer's own origin before acting on it.
 
 ### CONFIG
 

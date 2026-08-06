@@ -98,19 +98,14 @@ export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
 			[composeState],
 		);
 
-		// Send the initial state once the iframe document has loaded. A short delay
-		// lets the viewer's bootstrap attach its postMessage bridge before we send.
+		// Sending the initial state is driven by the viewer's READY message (see the
+		// message listener below), not by a timer: the iframe's `load` event fires
+		// before the viewer's bootstrap has attached its bridge, so a CONFIG sent
+		// there would be dropped. `load` only resets the per-document state, since a
+		// reload means a fresh viewer that will announce itself again.
 		const handleLoad = () => {
 			readyRef.current = false;
 			cameraRef.current = null;
-			window.setTimeout(() => {
-				post({
-					type: "CONFIG",
-					state: composeState(layersRef.current),
-					mode: "full",
-				});
-				readyRef.current = true;
-			}, 250);
 		};
 
 		// Re-send a full state whenever the layers change.
@@ -119,12 +114,19 @@ export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
 			post({ type: "CONFIG", state: composeState(layers), mode: "full" });
 		}, [layers, composeState, post]);
 
-		// Surface REPORT/CLICK messages coming back from the viewer.
+		// Surface READY/REPORT/CLICK messages coming back from the viewer.
 		useEffect(() => {
 			const onMessage = (event: MessageEvent) => {
 				const data = event.data;
 				if (!data || data.namespace !== PROTOCOL_NAMESPACE) return;
-				if (data.type === "REPORT" && data.state) {
+				if (data.type === "READY") {
+					readyRef.current = true;
+					post({
+						type: "CONFIG",
+						state: composeState(layersRef.current),
+						mode: "full",
+					});
+				} else if (data.type === "REPORT" && data.state) {
 					cameraRef.current = data.state as ViewerStateJson;
 				} else if (data.type === "CLICK" && data.geographic) {
 					onClick?.(data.geographic);
@@ -132,7 +134,7 @@ export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
 			};
 			window.addEventListener("message", onMessage);
 			return () => window.removeEventListener("message", onMessage);
-		}, [onClick]);
+		}, [onClick, post, composeState]);
 
 		return (
 			<iframe

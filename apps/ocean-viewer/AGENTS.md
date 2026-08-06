@@ -52,7 +52,7 @@ an interactive parent-side harness, see
 
 - Wrapper modules live in `src/wrapper/`; the parent↔iframe message contract is the
   shared [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) package
-  (`CONFIG` / `REPORT` / `CLICK`, each with a `namespace: "ocean-viewer"` envelope,
+  (`CONFIG` / `READY` / `REPORT` / `CLICK`, each with a `namespace: "ocean-viewer"` envelope,
   origin-restricted).
 - **Colormaps:** the portal can send a named colormap on an image layer via the
   `oceanColormap` field (`{colormap, dataMin, dataMax, scale?, clamp?}`), which

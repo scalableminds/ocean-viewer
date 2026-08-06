@@ -18,6 +18,7 @@ import "./chrome.css";
  * Creates Neuroglancer (4-panel layout) with a one-off `#!{JSON}` hash seed,
  * then attaches the MyOcean postMessage bridge:
  *   - inbound CONFIG  → applied to the viewer state (full or partial)
+ *   - outbound READY  → sent once when the bridge is listening
  *   - outbound REPORT → debounced serialised state after user interaction
  */
 function bootstrap(): void {
@@ -63,6 +64,10 @@ function bootstrap(): void {
 	reporter = new Reporter(viewer, bridge);
 	// Don't report the initial (seed) state as if it were a user interaction.
 	reporter.captureBaseline();
+
+	// Everything is wired up and the bridge is listening: tell the parent it can
+	// send CONFIG now, so it doesn't have to guess with a timeout.
+	bridge.sendReady();
 }
 
 try {

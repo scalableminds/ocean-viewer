@@ -196,6 +196,19 @@ export interface ConfigMessage {
 	mode?: "full" | "partial";
 }
 
+/**
+ * Outbound: viewer → portal. Sent once, as soon as the viewer is initialised
+ * and its bridge is listening, so the portal knows when a CONFIG will be
+ * received rather than having to guess with a timeout.
+ *
+ * Because it precedes any inbound message, the origin handshake has not run
+ * yet: unless the viewer was built with a fixed `VITE_PARENT_ORIGIN`, READY is
+ * the one message posted to `*`. It carries no payload, so nothing is exposed.
+ */
+export interface ReadyMessage {
+	type: "READY";
+}
+
 /** Outbound: viewer → portal. Serialised viewer state after user interaction. */
 export interface ReportMessage {
 	type: "REPORT";
@@ -222,7 +235,7 @@ export interface ClickMessage {
 }
 
 export type InboundMessage = ConfigMessage;
-export type OutboundMessage = ReportMessage | ClickMessage;
+export type OutboundMessage = ReadyMessage | ReportMessage | ClickMessage;
 
 /** Full message as it travels over `postMessage`: the payload plus `namespace`. */
 export type Message<M extends { type: string }> = M & {
