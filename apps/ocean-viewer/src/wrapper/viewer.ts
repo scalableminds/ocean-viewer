@@ -38,13 +38,14 @@ export function createViewer(target: HTMLElement): Viewer {
 	bindDefaultCopyHandler(viewer);
 	bindDefaultPasteHandler(viewer);
 
-	// Black background outside the data, orthographic 3D camera. Set before the
-	// ConfigApplier captures the pristine state, so these persist across CONFIGs
-	// unless one explicitly overrides them.
+	// Black background outside the data, no scale bars, orthographic 3D camera.
+	// Set before the ConfigApplier captures the pristine state, so these persist
+	// across CONFIGs unless one explicitly overrides them.
 	const current = viewer.state.toJSON() as ViewerStateJson;
 	viewer.state.restoreState({
 		crossSectionBackgroundColor: "#000000",
 		projectionBackgroundColor: "#000000",
+		showScaleBar: false,
 		layout: withOrthographicDefault(current.layout),
 	});
 
