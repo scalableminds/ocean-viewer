@@ -6,6 +6,7 @@ import { resolveShader } from "@ocean-viewer/colormaps/shader";
 import { Bridge } from "./wrapper/bridge.js";
 import { ConfigApplier } from "./wrapper/config.js";
 import { registerOceanImageLayer } from "./wrapper/image-layer.js";
+import { NavigationHelp } from "./wrapper/navigation-help.js";
 import { PointerForwarder } from "./wrapper/pointer.js";
 import { Reporter } from "./wrapper/report.js";
 import { createViewer, parseHashState } from "./wrapper/viewer.js";
@@ -40,6 +41,7 @@ function bootstrap(): void {
 
 	const viewer = createViewer(target);
 	new ViewportControls(viewer);
+	new NavigationHelp(target);
 	// Expose for debugging / automation.
 	(window as unknown as { viewer: unknown; oceanViewer: unknown }).viewer =
 		viewer;

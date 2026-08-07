@@ -77,3 +77,97 @@
 	background: rgb(255 255 255 / 15%);
 	color: #fff;
 }
+
+/* Navigation cheat sheet in the viewer's top-right corner (injected by
+   wrapper/navigation-help.ts). Sits on the container, above the Neuroglancer
+   root, so it stays put across layout changes. */
+.ocean-navigation-help {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	z-index: 10;
+	font-family: sans-serif;
+	font-size: 11px;
+	line-height: 1.4;
+}
+
+.ocean-navigation-help-trigger {
+	display: block;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border: 1px solid rgb(255 255 255 / 35%);
+	border-radius: 50%;
+	background: rgb(0 0 0 / 45%);
+	color: #9aa0a6;
+	font: inherit;
+	font-style: italic;
+	cursor: help;
+}
+
+.ocean-navigation-help:hover .ocean-navigation-help-trigger,
+.ocean-navigation-help:focus-within .ocean-navigation-help-trigger {
+	border-color: rgb(255 255 255 / 60%);
+	color: #fff;
+}
+
+.ocean-navigation-help-popover {
+	display: none;
+	position: absolute;
+	top: 22px;
+	right: 0;
+	width: max-content;
+	max-width: 260px;
+	padding: 8px 10px;
+	border: 1px solid rgb(255 255 255 / 15%);
+	border-radius: 4px;
+	background: rgb(0 0 0 / 88%);
+	color: #d0d3d7;
+	/* The panel underneath sets `cursor: crosshair` on everything inside it. */
+	cursor: default;
+}
+
+.ocean-navigation-help:hover .ocean-navigation-help-popover,
+.ocean-navigation-help:focus-within .ocean-navigation-help-popover {
+	display: block;
+}
+
+.ocean-navigation-help-popover h2 {
+	margin: 0 0 4px;
+	color: #9aa0a6;
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.ocean-navigation-help-popover h2:not(:first-child) {
+	margin-top: 10px;
+}
+
+.ocean-navigation-help-popover dl {
+	display: grid;
+	grid-template-columns: auto auto;
+	gap: 3px 12px;
+	margin: 0;
+}
+
+.ocean-navigation-help-popover dt {
+	white-space: nowrap;
+}
+
+.ocean-navigation-help-popover dd {
+	margin: 0;
+	text-align: right;
+	white-space: nowrap;
+}
+
+.ocean-navigation-help-popover kbd {
+	padding: 1px 4px;
+	border: 1px solid rgb(255 255 255 / 20%);
+	border-radius: 3px;
+	background: rgb(255 255 255 / 8%);
+	color: #fff;
+	font-family: inherit;
+	font-size: 10px;
+}
