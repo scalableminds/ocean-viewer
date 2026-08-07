@@ -1,14 +1,10 @@
 /**
  * Applies inbound CONFIG messages to the Neuroglancer viewer state.
  *
- * Neuroglancer's `state.restoreState(json)` merges by top-level key: only the
- * keys present in `json` are applied, and any key it omits keeps its current
- * value. We rely on that and deliberately AVOID `state.reset()`: resetting and
- * then restoring an *incomplete* state (e.g. just `{layout: "xy"}`) leaves the
- * viewer in an inconsistent state that asynchronously snaps back to its prior
- * layout. Instead we capture the pristine default state once at startup and
- * implement a full replace as `restoreState({...pristine, ...state})`, which is
- * always a complete, stable object.
+ * Deliberately avoids `state.reset()`: resetting then restoring an incomplete
+ * state leaves the viewer inconsistent and it snaps back to its prior layout.
+ * Instead the pristine default state is captured once at startup, and a full
+ * replace is `restoreState({...pristine, ...state})` — always complete.
  *
  *   - full    : replace everything; keys absent from `state` fall back to the
  *               pristine default (clears stale layers etc.).
@@ -43,10 +39,9 @@ export class ConfigApplier {
 
 	apply(message: ConfigMessage): void {
 		const mode = message.mode ?? (this.hasReceivedFull ? "partial" : "full");
-		// Pull off the Ocean Viewer extensions Neuroglancer doesn't understand:
-		// `oceanAxisUnits` (X/Y/Z readout unit labels) is applied out-of-band and
-		// stripped so it never reaches `restoreState`. Only updated when present,
-		// so partial CONFIGs that omit it keep the current units.
+		// `oceanAxisUnits` (X/Y/Z unit labels) is applied out-of-band and stripped
+		// so it never reaches `restoreState`; omitted on partial CONFIGs keeps the
+		// current units.
 		const { oceanAxisUnits, ...rawState } = message.state as ViewerStateJson;
 		if (oceanAxisUnits !== undefined) {
 			setAxisUnits(oceanAxisUnits);
@@ -92,11 +87,8 @@ export class ConfigApplier {
  * Copy one same-named key between two values of the same type.
  *
  * A plain `target[key] = source[key]` doesn't type-check when `key` is a
- * generic `keyof T` rather than a literal: TS can't correlate which specific
- * property `key` names, so it can't verify the read from `source` matches
- * what `target` accepts for that same (unknown-to-it) property. Routing the
- * assignment through a function generic over `T`/`K extends keyof T` gives TS
- * that correlation back.
+ * generic `keyof T`; routing it through a function generic over `T`/`K
+ * extends keyof T` gives TS back the correlation it needs.
  */
 function copyKey<T, K extends keyof T>(target: T, source: T, key: K): void {
 	target[key] = source[key];

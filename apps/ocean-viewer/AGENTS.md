@@ -59,6 +59,13 @@ an interactive parent-side harness, see
   before `restoreState`
   ([@ocean-viewer/colormaps/shader](../../packages/colormaps/src/shader.ts)). `colormap` may also be
   a raw GLSL string (passed through). Missing/`NaN` voxels render black.
+- **Value readouts:** the spec is *kept* on the layer after resolution, because
+  `scaleFactor`/`addOffset`/`noDataValue` also govern what a picked value means.
+  [src/wrapper/image-layer.ts](src/wrapper/image-layer.ts) registers an
+  `ImageUserLayer` subclass overriding `transformPickedValue`, Neuroglancer's
+  hook for this — that one override covers the layer bar, the selection panel
+  and CLICK/HOVER at once. Apply value semantics THERE, not in `pointer.ts`,
+  or Neuroglancer's own UI and our messages disagree.
 - **Data sources:** Zarr via `https://…/array/|zarr2:`; plain Zarr has no
   spatial metadata, so axis orientation comes from the layer `source.transform`
   (e.g. inverting x/y — see the example).

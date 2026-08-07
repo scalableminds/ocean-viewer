@@ -5,6 +5,7 @@ import "neuroglancer/unstable/main_module.js";
 import { resolveShader } from "@ocean-viewer/colormaps/shader";
 import { Bridge } from "./wrapper/bridge.js";
 import { ConfigApplier } from "./wrapper/config.js";
+import { registerOceanImageLayer } from "./wrapper/image-layer.js";
 import { PointerForwarder } from "./wrapper/pointer.js";
 import { Reporter } from "./wrapper/report.js";
 import { installUnitLabels } from "./wrapper/units.js";
@@ -25,7 +26,7 @@ import "./chrome.css";
  *   - outbound CLICK  → position + per-layer values for a click in a data panel
  *   - outbound HOVER  → the same, throttled, as the pointer moves over the data
  *
- * It also overlays the 3D panel with camera reset / axis-align buttons, since
+ * Also overlays the 3D panel with camera reset / axis-align buttons, since
  * Neuroglancer's own recovery affordances are hidden chrome or key bindings.
  */
 function bootstrap(): void {
@@ -34,10 +35,14 @@ function bootstrap(): void {
 		throw new Error("#neuroglancer-container element not found");
 	}
 
+	// Swap in the Ocean image layer before any layer is created, so every image
+	// layer reports values in physical units.
+	registerOceanImageLayer();
+
 	const viewer = createViewer(target);
 	installUnitLabels(viewer);
 	new ViewportControls(viewer);
-	// Expose for debugging / automation (parity with Neuroglancer's default setup).
+	// Expose for debugging / automation.
 	(window as unknown as { viewer: unknown; oceanViewer: unknown }).viewer =
 		viewer;
 	(window as unknown as { oceanViewer: unknown }).oceanViewer = {

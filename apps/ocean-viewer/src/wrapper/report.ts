@@ -2,12 +2,10 @@
  * Emits debounced REPORT messages whenever the viewer state changes due to user
  * interaction.
  *
- * Echo suppression: applying an inbound CONFIG also fires `state.changed`. To
- * avoid bouncing that state straight back to the parent, we dedupe against the
- * last serialised state we are aware of. After applying a CONFIG the host calls
- * {@link captureBaseline}, so the subsequent change-triggered flush sees an
- * unchanged state and stays silent. Genuine user edits differ from the baseline
- * and are reported.
+ * Echo suppression: applying an inbound CONFIG also fires `state.changed`, so
+ * changes are deduped against the last serialised state. The host calls
+ * {@link captureBaseline} after applying a CONFIG, so that flush sees an
+ * unchanged state and stays silent; genuine user edits differ and get reported.
  */
 
 import type { Viewer } from "neuroglancer/unstable/viewer.js";

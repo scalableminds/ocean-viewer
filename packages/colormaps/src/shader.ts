@@ -1,24 +1,19 @@
 /**
  * Colormap + value-rendering shader resolver for image layers.
  *
- * The Data Portal supplies a colormap either as:
- *   - a raw GLSL shader string  → used verbatim as the layer `shader`, or
- *   - a colormap id (e.g. "viridis") → resolved here to a generated GLSL
- *     shader that maps the data value through the colormap.
+ * A `ColormapSpec` is either a raw GLSL shader string (used verbatim) or a
+ * colormap id (e.g. "viridis"), resolved here into a generated GLSL shader
+ * from this package's stop lists, supporting logarithmic scaling, value
+ * clamping, inversion, and transparent missing voxels (NaN, CMEMS fill,
+ * sentinel).
  *
- * On top of the colormap we support, per the spec:
- *   - logarithmic scaling   (`logScale: true`)
- *   - value clamping        (`valueClamp: true`)
- *   - reversed colormaps    (`colormapInvert: true`)
- *   - null / missing voxels rendered transparent (NaN, CMEMS fill, sentinel)
+ * The spec also carries the CF packing (`scaleFactor`/`addOffset`) and the
+ * no-data sentinel, describing what a stored number *means* rather than how
+ * it's coloured. {@link physicalValue} applies them in JS for value readouts,
+ * mirroring what {@link resolveShader} compiles into GLSL.
  *
- * Neuroglancer only ships `colormapJet`/`colormapCubehelix` natively, so every
- * colormap the protocol names is compiled into the shader here, from the stop
- * lists of this package.
- *
- * Lives here rather than in the viewer so the portal side can produce the same
- * standard-Neuroglancer state — the mock's "open in Neuroglancer" needs it to
- * hand an external instance a state it can render.
+ * Lives here rather than in the viewer so the portal side (the mock's "open
+ * in Neuroglancer") can produce the same standard-Neuroglancer state.
  */
 
 import type {
@@ -71,26 +66,21 @@ export function resolveShader(spec: ColormapSpec): string {
 			? `\n  if (value == ${glslFloat(spec.noDataValue)}) { emitTransparent(); return; }`
 			: "";
 	// CF packing: Neuroglancer hands the shader the RAW stored integer, so undo
-	// `scale_factor`/`add_offset` here — after the missing-data guards above
-	// (which are specified against the raw value) and before normalisation, so
-	// valueMin/valueMax are expressed in physical units.
-	const scaleFactor = spec.scaleFactor ?? 1;
-	const addOffset = spec.addOffset ?? 0;
+	// `scale_factor`/`add_offset` after the missing-data guards (specified
+	// against the raw value) and before normalisation (which needs physical units).
+	const { scale, offset } = packing(spec);
 	const unpackLine =
-		scaleFactor !== 1 || addOffset !== 0
-			? `\n  value = value * ${glslFloat(scaleFactor)} + ${glslFloat(addOffset)};`
+		scale !== 1 || offset !== 0
+			? `\n  value = value * ${glslFloat(scale)} + ${glslFloat(offset)};`
 			: "";
 
 	// Missing voxels render transparent (not black) so lower layers and the page
 	// background show through where a layer has no data (land, fill values).
 	//
-	// `getDataValue()` is typed after the source's data type: `float` for
-	// float32, but one of Neuroglancer's `int16_t`/`uint16_t`/… structs for
-	// integer arrays (CMEMS ships int16-packed ones). `toRaw()` unwraps the
-	// struct to a plain int/uint and is the identity on float, so this reads the
-	// raw stored value whatever the data type. Without it the shader fails to
-	// compile for integer sources and Neuroglancer silently falls back to its
-	// default grayscale shader.
+	// `toRaw()` unwraps `getDataValue()`'s typed-struct result (Neuroglancer
+	// wraps integer sources like CMEMS's int16 arrays) to a plain number; it's
+	// the identity on float. Without it, the shader fails to compile for
+	// integer sources and Neuroglancer falls back to its default grayscale one.
 	return `${colormapGlsl(id)}
 void main() {
   float value = float(toRaw(getDataValue()));
@@ -102,24 +92,103 @@ void main() {
 }
 
 /**
+ * The spec's CF packing, defaulted to the identity.
+ *
+ * Shared by the GLSL {@link resolveShader} emits and the JS {@link physicalValue}
+ * applies, so the colours on screen and the numbers the UI reads out cannot
+ * drift apart.
+ */
+function packing(spec: ColormapSpec): { scale: number; offset: number } {
+	return { scale: spec.scaleFactor ?? 1, offset: spec.addOffset ?? 0 };
+}
+
+/**
+ * Magnitude above which a stored value is missing rather than measured — the
+ * CMEMS default fill (~9.969e36). Mirrors the shader's `abs(value) > 1e30` guard.
+ */
+const MISSING_MAGNITUDE = 1e30;
+
+/**
+ * What a RAW stored value means in physical units, per `spec`, or `undefined`
+ * where the layer has no data (NaN, the CMEMS fill, or the `noDataValue`
+ * sentinel) — `undefined` since that's what Neuroglancer renders as an empty
+ * readout cell.
+ *
+ * The readout counterpart of the unpacking {@link resolveShader} compiles into
+ * GLSL, with guards applied in the same order so a voxel that renders
+ * transparent has no readout either (a sentinel wouldn't unpack to a
+ * plausible-looking value instead of "no data").
+ *
+ * A spec that declares neither packing nor a sentinel hands the value straight
+ * back — including `bigint`, so 64-bit integer layers keep an exact readout.
+ */
+export function physicalValue(
+	spec: ColormapSpec,
+	raw: number | bigint,
+): number | bigint | undefined {
+	const { scale, offset } = packing(spec);
+	const { noDataValue } = spec;
+	if (scale === 1 && offset === 0 && noDataValue === undefined) {
+		return raw;
+	}
+	const value = Number(raw);
+	if (!Number.isFinite(value) || Math.abs(value) > MISSING_MAGNITUDE) {
+		return undefined;
+	}
+	if (value === noDataValue) {
+		return undefined;
+	}
+	return value * scale + offset;
+}
+
+/**
  * Resolve any `oceanColormap` fields on a viewer state's image layers into
  * Neuroglancer `shader` strings.
  *
- * This is the integration point for the Data Portal's "colormap by id"
- * interface: instead of hand-writing GLSL, a CONFIG layer may carry
- *   `"oceanColormap": { "colormapId": "viridis", "valueMin": 10, "valueMax": 20,
- *                       "logScale": true, "valueClamp": true }`
- * which we convert to a `shader` (log scale, clamping and null→transparent included)
- * and strip, so the object handed to `restoreState` is standard Neuroglancer
- * state. Layers that already specify a raw `shader` are left untouched; the
- * `colormapId` field may also itself be a raw GLSL string (passed through).
+ * The integration point for the Data Portal's "colormap by id" interface:
+ * instead of hand-writing GLSL, a CONFIG layer may carry an `oceanColormap`
+ * spec that gets converted to a `shader`.
+ *
+ * The spec is kept on the layer rather than stripped: besides colouring, it
+ * declares what a stored value means, which the viewer's image layer needs to
+ * report physical values (see {@link physicalValue}). Neuroglancer ignores
+ * layer keys it doesn't know, so the state stays safe to hand to
+ * `restoreState`; use {@link stripOceanColormaps} for a state that must carry
+ * nothing of ours.
  */
 export function resolveStateColormaps(state: ViewerStateJson): ViewerStateJson {
+	return mapOceanColormapLayers(state, (layer, oceanColormap) => ({
+		...layer,
+		shader: resolveShader(oceanColormap),
+	}));
+}
+
+/**
+ * Drop every layer's `oceanColormap`, leaving plain Neuroglancer state.
+ *
+ * For handing a state to a stock instance, which has no use for the field once
+ * {@link resolveStateColormaps} has compiled it into the layer `shader`.
+ */
+export function stripOceanColormaps(state: ViewerStateJson): ViewerStateJson {
+	return mapOceanColormapLayers(state, (layer) => {
+		const { oceanColormap: _dropped, ...rest } = layer;
+		return rest;
+	});
+}
+
+/** Apply `transform` to each layer carrying an `oceanColormap`. */
+function mapOceanColormapLayers(
+	state: ViewerStateJson,
+	transform: (
+		layer: Record<string, unknown>,
+		oceanColormap: ColormapSpec,
+	) => Record<string, unknown>,
+): ViewerStateJson {
 	const layers = state.layers;
 	if (!Array.isArray(layers)) {
 		return state;
 	}
-	const resolved = layers.map((layer) => {
+	const mapped = layers.map((layer) => {
 		if (
 			layer === null ||
 			typeof layer !== "object" ||
@@ -127,22 +196,18 @@ export function resolveStateColormaps(state: ViewerStateJson): ViewerStateJson {
 		) {
 			return layer;
 		}
-		const { oceanColormap, ...rest } = layer as Record<string, unknown>;
-		return { ...rest, shader: resolveShader(oceanColormap as ColormapSpec) };
+		const record = layer as Record<string, unknown>;
+		return transform(record, record.oceanColormap as ColormapSpec);
 	});
-	return { ...state, layers: resolved };
+	return { ...state, layers: mapped };
 }
 
 /**
  * Compile a colormap into a GLSL `vec3 cmap(float t)` function.
  *
- * The stops are emitted as a `vec4` table of `(position, r, g, b)` and looked up
- * by walking to the first stop at or past `t`, then interpolating within that
- * segment — the same piecewise-linear reconstruction the stop lists are fitted
- * for, so the shader reproduces the reference colormap to within 1/255.
- *
- * Positions are strictly increasing (they come from distinct lookup-table
- * indices), so the `hi.x - lo.x` divisor is never zero.
+ * Stops are emitted as a `vec4` table of `(position, r, g, b)`, looked up by
+ * walking to the first stop at or past `t` and interpolating within that
+ * segment. Positions are strictly increasing, so `hi.x - lo.x` is never zero.
  */
 function colormapGlsl(id: ColormapId): string {
 	const stops = COLORMAP_STOPS[id];

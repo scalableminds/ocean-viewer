@@ -87,6 +87,13 @@ Layers re-use the [Neuroglancer API](https://neuroglancer-docs.web.app/json/api/
 | `noDataValue` | number | — | raw-value sentinel for missing data, checked before scale/offset (NaN and CMEMS's ~9.969e36 fill are always treated as missing regardless) |
 | `scaleFactor` / `addOffset` | number | `1` / `0` | CF packing: `physical = raw * scaleFactor + addOffset` |
 
+`oceanColormap` is compiled into the layer `shader` but, unlike `oceanAxisUnits`,
+is **kept** on the layer: `scaleFactor`/`addOffset`/`noDataValue` say what a
+stored number means, and the viewer's image layer applies them to every value
+readout (the layer bar, the selection panel, and `CLICK`/`HOVER`). Neuroglancer
+ignores layer keys it doesn't know, so the state stays valid for a stock
+instance.
+
 ### Colormap ids
 
 A colormap is identified by its name. The 26 available ids are:
@@ -215,4 +222,4 @@ Notes on the parts that are easy to get wrong:
 - **World dimensions come first**, in display order. Neuroglancer derives the global dimension order from the loaded layer *sources*, not from `dimensions`, and uses the first three as the 4-panel display axes.
 - **`y` and `elevation` are negated** because the panels draw the second and third display axes downwards. Here `y = -latitude` renders north-up, and `elevation = 49 - level` renders surface-up (the array's `elevation` coordinate ascends from -5727.9 m at index 0 to -0.494 m at index 49).
 - **`subsources` overrides individual subsources by id**; the ones it doesn't name follow `enableDefaultSubsources`. The zarr driver publishes two: `default` (the volume) and `bounds` (the yellow data-bounds box). A layer that omits a world dimension is unbounded along it, so its box becomes an edgeless slab filling the section panels — such a layer wants `"bounds": false`.
-- **`scaleFactor`/`addOffset` carry the CF packing.** These arrays are int16; Neuroglancer reads the raw integer, so passing the packing lets `valueMin`/`valueMax` and `noDataValue` stay meaningful — the value range in physical units, the fill sentinel in raw ones.
+- **`scaleFactor`/`addOffset` carry the CF packing.** These arrays are int16; Neuroglancer reads the raw integer, so passing the packing lets `valueMin`/`valueMax` and `noDataValue` stay meaningful — the value range in physical units, the fill sentinel in raw ones. The viewer applies the packing twice over: in the shader, and again to picked values so readouts are physical too.

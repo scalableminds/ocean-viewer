@@ -51,13 +51,12 @@ interface Props {
 /**
  * Embeds the Ocean Viewer iframe and keeps it in sync with the layer list.
  *
- * Every update is sent as a `full` CONFIG. A partial (`layers`-only) update
- * can't be used here: the layers span different dimensions (deptho is 2-D,
- * thetao/chl are 4-D), so Neuroglancer re-derives the global dimension ORDER
- * from whichever layers are visible. A full state pins `dimensions` and
- * `position` together so the axes never scramble. To still preserve the user's
- * camera across edits, we cache the camera from inbound REPORTs and graft it
- * onto the full state we send.
+ * Every update is sent as a `full` CONFIG rather than a partial `layers`-only
+ * one: layers span different dimensions, so Neuroglancer would re-derive the
+ * global dimension order from whichever layers are visible. A full state pins
+ * `dimensions` and `position` together so the axes never scramble. To still
+ * preserve the user's camera across edits, the camera from inbound REPORTs is
+ * cached and grafted onto each full state sent.
  */
 export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
 	function OceanViewerFrame({ layers, onClick, onHover }, ref) {
@@ -69,8 +68,8 @@ export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
 		const layersRef = useRef(layers);
 		layersRef.current = layers;
 
-		// Stable identity (only reads refs) so the effect below can list it as a
-		// dependency without re-firing on every render.
+		// Stable identity (only reads refs), so effects can depend on it without
+		// re-firing every render.
 		const post = useCallback((message: Omit<ConfigMessage, "namespace">) => {
 			const win = iframeRef.current?.contentWindow;
 			if (!win) return;
@@ -78,7 +77,6 @@ export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
 		}, []);
 
 		// Full state for the current layers, with the user's last camera grafted on.
-		// Stable identity (only reads refs/module constants), same reason as `post`.
 		const composeState = useCallback((layerList: Layer[]): ViewerStateJson => {
 			const state = buildFullState(layerList) as Record<string, unknown>;
 			const camera = cameraRef.current as Record<string, unknown> | null;
@@ -90,19 +88,18 @@ export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
 			return state as ViewerStateJson;
 		}, []);
 
-		// Let the parent read that same state (for the debug buttons) without having
-		// to duplicate the camera bookkeeping.
+		// Let the parent read that same state (for the debug buttons) without
+		// duplicating the camera bookkeeping.
 		useImperativeHandle(
 			ref,
 			() => ({ getState: () => composeState(layersRef.current) }),
 			[composeState],
 		);
 
-		// Sending the initial state is driven by the viewer's READY message (see the
-		// message listener below), not by a timer: the iframe's `load` event fires
-		// before the viewer's bootstrap has attached its bridge, so a CONFIG sent
-		// there would be dropped. `load` only resets the per-document state, since a
-		// reload means a fresh viewer that will announce itself again.
+		// The initial state is sent on the viewer's READY message (below), not on
+		// `load`: `load` fires before the viewer's bridge is attached, so a CONFIG
+		// sent there would be dropped. It still resets the per-document state,
+		// since a reload means a fresh viewer that will announce itself again.
 		const handleLoad = () => {
 			readyRef.current = false;
 			cameraRef.current = null;

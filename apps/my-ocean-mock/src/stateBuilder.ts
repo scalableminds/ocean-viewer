@@ -59,11 +59,9 @@ export function layersToState(layers: Layer[]): NeuroglancerLayerJson[] {
  * time (daily index) — all layers share one time axis, so it's global rather
  * than a per-layer local dimension.
  *
- * It must be sent on EVERY update — including partial ones — to pin the
- * dimension order. If a partial update omits it, Neuroglancer recomputes the
- * coordinate space from the currently-visible layers (e.g. dropping elevation
- * when only the 3-D sea-ice layer is shown), which misaligns the preserved
- * position array and breaks the view.
+ * Must be sent on EVERY update, including partial ones, to pin the dimension
+ * order — otherwise Neuroglancer recomputes it from the currently-visible
+ * layers, misaligning the preserved position array.
  */
 const DIMENSIONS: Record<string, [number, string]> = {
 	x: [1, ""],
@@ -76,10 +74,8 @@ const DIMENSIONS: Record<string, [number, string]> = {
  * Build the initial full CONFIG state.
  *
  * Display dimensions default to the first three (x, y, elevation), so the
- * 4-panel layout shows the lon/lat map plus lon/elevation and lat/elevation
- * sections. Position must have one entry per entry in {@link DIMENSIONS} and
- * seeds an accessible slice: lon 0°, lat 0°, surface (elevation index 0, which
- * the transform maps from level 49). The time index is seeded per layer.
+ * 4-panel layout shows the lon/lat map plus elevation sections. `position`
+ * seeds an accessible slice: lon 0°, lat 0°, surface.
  */
 export function buildFullState(layers: Layer[]): ViewerStateJson {
 	return {

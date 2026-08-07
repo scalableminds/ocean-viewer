@@ -1,30 +1,19 @@
 /**
  * Emits CLICK and HOVER messages for the position under the pointer and the
- * value each visible layer has there.
+ * value each visible layer has there, reading Neuroglancer's
+ * `mouseState.position` and `layerSelectedValues`.
  *
- * Both read the same two things from Neuroglancer:
- *   - `mouseState.position` — the global-coordinate position under the cursor
- *   - `layerSelectedValues` — per-layer value there, the same source that feeds
- *     the built-in hover readouts and selection panel
- *
- * Click vs. drag: Neuroglancer binds plain left-drag in the data panels to
- * panning/rotating, and a pan ends with a DOM `click` like any other press and
- * release on the same element. So the press position is remembered and the click
- * only counts if the pointer barely moved — a pan is not a click.
+ * Click vs. drag: a pan ends with a DOM `click` like any other press-release,
+ * so the press position is remembered and a click only counts if the pointer
+ * barely moved.
  *
  * Nothing is emitted unless Neuroglancer has a valid picked position under the
- * cursor (`mouseState.active`). The panels set that up on mouse move and drop it
- * on mouse out, so clicks on Neuroglancer's own UI chrome never report. It also
- * means the pointer has to move once after a CONFIG rebuilds the panels before
- * the first click/hover lands: until those panels have redrawn there is no pick
- * data to read, and inventing a position from stale data would be worse than
- * silence.
- *
- * That gate does not cover chrome the Ocean wrapper injects *inside* a panel
- * (the 3D viewport's camera buttons), where the pick stays valid the whole time.
- * Those are excluded by target instead. It has to happen here rather than by
- * stopping propagation at the overlay: these listeners are on `viewer.element`
- * in the capture phase, so they run before the overlay's own handlers.
+ * cursor (`mouseState.active`), so clicks on Neuroglancer's own UI chrome never
+ * report and the pointer must move once after a CONFIG rebuilds the panels
+ * before the first click/hover lands. Overlay chrome the Ocean wrapper injects
+ * inside a panel (the 3D viewport's camera buttons) isn't covered by that gate
+ * and is excluded by target instead, since these listeners run in the capture
+ * phase on `viewer.element`, ahead of the overlay's own handlers.
  */
 
 import type { LayerValue, PointerSample } from "@ocean-viewer/protocol";
@@ -56,8 +45,7 @@ export class PointerForwarder {
 		private readonly bridge: Bridge,
 		private readonly hoverIntervalMs = DEFAULT_HOVER_INTERVAL_MS,
 	) {
-		// Capture phase: the data panels stop propagation of their own mouse
-		// events, and they are descendants of `viewer.element`.
+		// Capture phase: the data panels stop propagation of their own mouse events.
 		viewer.element.addEventListener("mousedown", this.handleMouseDown, true);
 		viewer.element.addEventListener("click", this.handleClick, true);
 		viewer.mouseState.changed.add(this.scheduleHover);
@@ -97,9 +85,9 @@ export class PointerForwarder {
 
 	/**
 	 * Throttle HOVER to one message per {@link hoverIntervalMs}, leading edge
-	 * plus a trailing send. The trailing send matters more than it looks: without
-	 * it the pointer's resting position — the one the user is actually reading —
-	 * is the one that gets dropped.
+	 * plus a trailing send — without the trailing send, the pointer's resting
+	 * position (the one the user is actually reading) is the one that gets
+	 * dropped.
 	 */
 	private readonly scheduleHover = (): void => {
 		if (this.hoverTimer !== undefined) {
@@ -127,9 +115,8 @@ export class PointerForwarder {
 		if (sample === undefined) {
 			return;
 		}
-		// `mouseState.changed` also fires without the pointer having moved to a new
-		// voxel — a re-pick on the same pixel, or chunks arriving. Don't resend an
-		// identical readout.
+		// `mouseState.changed` also fires without the pointer moving to a new
+		// voxel (a re-pick, or chunks arriving); don't resend an identical readout.
 		const key = JSON.stringify(sample);
 		if (key === this.lastHoverKey) {
 			return;
@@ -142,9 +129,9 @@ export class PointerForwarder {
 	 * The position under the pointer and each visible layer's value there, or
 	 * `undefined` when Neuroglancer has no valid picked position.
 	 *
-	 * `force` re-picks synchronously. Pass true for a one-off read like a click;
-	 * pass false when reading from a `mouseState.changed` handler — forcing there
-	 * would re-enter that same signal, and the state was just recomputed anyway.
+	 * `force` re-picks synchronously — true for a one-off read like a click;
+	 * false from a `mouseState.changed` handler, where the state was just
+	 * recomputed and forcing would re-enter that same signal.
 	 */
 	private read(force: boolean): PointerSample | undefined {
 		const { mouseState } = this.viewer;

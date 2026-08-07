@@ -3,40 +3,28 @@ import type { Layer } from "./types";
 /**
  * Demo layers backed by real CMEMS ARCO zarr arrays, both from the same
  * product (GLOBAL_MULTIYEAR_PHY_001_030, daily 1/12°), so they share one
- * lon/lat/elevation lattice. Each array's index space is mapped into a shared
+ * lon/lat/elevation lattice. Each array's index space maps into a shared
  * world space:
  *
  *   x = longitude in degrees east   (-180 + i_lon * step)
  *   y = latitude, flipped north-up  ( 80  - i_lat * step)
- *   elevation = 49 - i_level        (0 = surface … 49 = deepest)
+ *   elevation = 49 - i_level        (0 = surface … 49 = deepest, negated
+ *                                    because Neuroglancer draws the third
+ *                                    display dimension downwards)
  *
- * The array's `elevation` coordinate is ASCENDING and runs from -5727.9 m at
- * index 0 to -0.494 m at index 49, i.e. index 0 is the DEEPEST level. The world
- * axis is negated (like y) because Neuroglancer's section panels draw the third
- * display dimension downwards; with `elevation = i_level` the ocean renders
- * upside down.
- *
- * Time is a shared GLOBAL dimension — both arrays are on the same daily axis,
- * so it lives in the world space alongside x/y/elevation rather than as a
- * per-layer local dimension.
- *
- * so/thetao are both 4-D (time, elevation, latitude, longitude). A source
- * transform's matrix is always `outputDimensions.length` rows × (input rank + 1)
- * columns, and the number of output dimensions must match the array's rank.
+ * Time is a shared GLOBAL dimension (both arrays share one daily axis), so it
+ * lives in world space alongside x/y/elevation rather than per-layer.
  *
  * IMPORTANT: every layer lists x, y, elevation FIRST in `outputDimensions`.
- * Neuroglancer derives the global dimension order from the loaded layer sources
- * and uses the first three as the 4-panel display dimensions. Leading with
- * x/y/elevation guarantees the panels show the lon/lat map (+ elevation
- * sections) and that the position array stays aligned, regardless of which
- * layers are visible or load first. `time` trails last since it isn't part of
- * the 4-panel display.
+ * Neuroglancer derives the global dimension order from the first three output
+ * dimensions of the loaded layer sources, so leading with x/y/elevation keeps
+ * the 4-panel display and position array aligned regardless of which layers
+ * are visible or load first. `time` trails last since it isn't part of that.
  *
- * All three arrays are CF-packed int16 (`<i2`): the physical value is
- * `raw * scaleFactor + addOffset`. Neuroglancer returns the raw integer, so the
- * packing is passed through to the shader via the protocol's
- * `scaleFactor`/`addOffset`, which lets `min`/`max` stay in physical units. The
- * `-32767` fill (land / below sea floor) is checked BEFORE unpacking.
+ * All three arrays are CF-packed int16 (`<i2`): physical value is
+ * `raw * scaleFactor + addOffset`, passed through to the shader via the
+ * protocol so `min`/`max` stay in physical units. The `-32767` fill (land /
+ * below sea floor) is checked BEFORE unpacking.
  */
 const GRID_STEP = 1 / 12; // 0.083° grid step
 const N_LEVELS = 50; // elevation axis length (so, thetao)
@@ -50,13 +38,6 @@ const SALINITY_URL = `${DATASET}/so/|zarr2:`;
 
 /** CMEMS fill value shared by both packed arrays. */
 const FILL = -32767;
-
-// Unused now that time is a global dimension (see {@link VOLUME_TRANSFORM});
-// kept for reference in case per-layer time pinning comes back.
-// const LOCAL_TIME = {
-// 	localDimensions: { "time'": [1, ""] as [number, string] },
-// 	localPosition: [TIME_INDEX],
-// };
 
 /**
  * Transform for the 4-D fields. Input dims: [time, elevation, latitude,

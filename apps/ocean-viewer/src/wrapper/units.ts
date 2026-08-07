@@ -1,16 +1,13 @@
 /**
  * Annotate the position widget's X/Y/Z coordinate readouts with physical units.
  *
- * Neuroglancer's coordinate-space units are SI-only — it rejects e.g. `"°"`
- * (`Invalid unit`), which ocean lon/lat need — and its position widget never
- * shows a unit as a clean "value unit" suffix anyway. So units are supplied
- * out-of-band by the Data Portal via the CONFIG extension field
- * `oceanAxisUnits` (a `{ dimensionName: unitString }` map), kept here in a small
- * registry, and rendered as a label appended after each coordinate input.
+ * Neuroglancer's coordinate-space units are SI-only (it rejects e.g. `"°"`),
+ * so units are supplied out-of-band via the CONFIG extension field
+ * `oceanAxisUnits` (a `{ dimensionName: unitString }` map) and rendered as a
+ * label appended after each coordinate input.
  *
- * Units are matched by dimension name (the position widget's per-row name
- * input), so they stay correct regardless of axis order. A dimension absent
- * from the map (or mapped to `""`) gets no label.
+ * Units are matched by dimension name, so they stay correct regardless of axis
+ * order. A dimension absent from the map (or mapped to `""`) gets no label.
  */
 
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
@@ -60,8 +57,8 @@ export function installUnitLabels(_viewer: Viewer): () => void {
 	reapply = apply;
 	apply();
 
-	// The widget's rows are re-rendered on navigation / new CONFIG. `apply` is
-	// idempotent, so observing its own mutations settles after one quiet cycle.
+	// Rows are re-rendered on navigation / new CONFIG; `apply` is idempotent, so
+	// observing its own mutations settles after one quiet cycle.
 	const topRow =
 		document.querySelector(".neuroglancer-viewer-top-row") ?? document.body;
 	const observer = new MutationObserver(() => apply());

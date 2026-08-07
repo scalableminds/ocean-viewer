@@ -1,16 +1,12 @@
 /**
  * Colour data for the named colormaps of the Ocean Viewer protocol.
  *
- * The protocol identifies a colormap by id (`@ocean-viewer/protocol`'s
- * {@link ColormapId}); this package is the single source of truth for what each
- * of those ids actually looks like. Both sides of the iframe need that: the
- * viewer compiles the stops into the GLSL of an image layer's shader, and the
- * portal paints the same stops into swatches and colour bars, so a layer's
- * legend matches what is drawn on the map.
+ * Single source of truth for what each `@ocean-viewer/protocol` {@link ColormapId}
+ * looks like: the viewer compiles stops into shader GLSL, and the portal
+ * paints the same stops into swatches and colour bars.
  *
- * Colormaps are stored as piecewise-linear {@link ColormapStop} lists rather
- * than as dense 256-entry lookup tables — see `tools/generate-stops.mjs`, which
- * derives them from the reference tables.
+ * Stored as piecewise-linear {@link ColormapStop} lists rather than dense
+ * 256-entry lookup tables — see `tools/generate-stops.mjs`.
  */
 
 import type { ColormapId } from "@ocean-viewer/protocol";

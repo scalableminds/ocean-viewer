@@ -1,11 +1,9 @@
 /**
  * postMessage bridge between the Ocean Viewer iframe and its parent (MyOcean).
  *
- * Inbound traffic is restricted to a configured parent origin. The origin can
- * be supplied at build time via `VITE_PARENT_ORIGIN`; otherwise the bridge
- * locks onto the origin of the first valid CONFIG it receives (handshake) and
- * rejects every other origin thereafter. Outbound messages are always targeted
- * at the locked origin, never `*`.
+ * Inbound traffic is restricted to a parent origin, supplied at build time via
+ * `VITE_PARENT_ORIGIN` or else locked onto the first valid sender (handshake).
+ * Outbound messages always target the locked origin, never `*`.
  */
 
 import {
@@ -55,10 +53,9 @@ export class Bridge {
 	 * Announce that the viewer is initialised and listening, so the parent can
 	 * send its first CONFIG instead of waiting out a timeout.
 	 *
-	 * Sent before any inbound message, so the handshake has not yet established
-	 * an origin: without a build-time `VITE_PARENT_ORIGIN` this is the one
-	 * message we broadcast to "*". READY has no payload, so that discloses
-	 * nothing beyond the iframe's existence — which the embedder already knows.
+	 * Sent before any inbound message, so without a build-time
+	 * `VITE_PARENT_ORIGIN` this is the one message broadcast to "*". READY
+	 * carries no payload, so that discloses nothing beyond the iframe existing.
 	 */
 	sendReady(): void {
 		if (this.parent === null) {
@@ -90,7 +87,7 @@ export class Bridge {
 			);
 			return;
 		}
-		// First accepted message locks the origin when not pre-configured.
+		// First accepted message locks the origin, if not pre-configured.
 		this.lockedOrigin ??= event.origin;
 
 		if (isConfigMessage(event.data)) {
@@ -102,8 +99,7 @@ export class Bridge {
 		if (this.lockedOrigin !== undefined) {
 			return origin === this.lockedOrigin;
 		}
-		// No configured origin yet: accept the handshake from any concrete origin
-		// (never the opaque "null" origin), then lock onto it.
+		// Accept the handshake from any concrete origin (never the opaque "null").
 		return origin !== "null" && origin.length > 0;
 	}
 }

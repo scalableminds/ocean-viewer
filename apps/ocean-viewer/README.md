@@ -27,6 +27,7 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
 | [src/wrapper/config.ts](src/wrapper/config.ts) | Apply CONFIG (full replace / partial merge) |
 | [src/wrapper/report.ts](src/wrapper/report.ts) | Debounced REPORT of viewer state |
 | [src/wrapper/pointer.ts](src/wrapper/pointer.ts) | CLICK / throttled HOVER with per-layer values |
+| [src/wrapper/image-layer.ts](src/wrapper/image-layer.ts) | Image layer reporting values in physical units |
 | [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) | CONFIG / READY / REPORT / CLICK / HOVER message contract |
 | [@ocean-viewer/colormaps](../../packages/colormaps/src/index.ts) | Colour data behind each colormap id |
 | [@ocean-viewer/colormaps/shader](../../packages/colormaps/src/shader.ts) | Named colormap → GLSL shader resolver |
@@ -41,8 +42,9 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
   listening. The parent should wait for it before sending its first CONFIG.
 - **REPORT** (outbound): debounced serialised state after user interaction.
 - **CLICK** (outbound): the global-coordinate position clicked in a data panel,
-  plus the raw value each visible layer has there. Drags (pan/rotate) are not
-  clicks. The `geographic` lon/lat/depth conversion is not implemented yet.
+  plus the value each visible layer has there, in physical units. Drags
+  (pan/rotate) are not clicks. The `geographic` lon/lat/depth conversion is not
+  implemented yet.
 - **HOVER** (outbound): the same payload as CLICK as the pointer moves over the
   data, throttled to one message per 100 ms (leading edge plus a trailing send)
   and skipped when the readout is unchanged.
@@ -77,6 +79,15 @@ the wrapper resolves into the layer `shader`:
 voxels (`NaN`, the CMEMS fill value, or an explicit `noDataValue`) render
 transparent. See the [protocol README](../../packages/protocol/README.md#layers--oceancolormap)
 for the full field list.
+
+The spec's `scaleFactor`/`addOffset` (CF packing) and `noDataValue` say what a
+stored number *means*, so they are applied to value readouts as well as to the
+picture: [src/wrapper/image-layer.ts](src/wrapper/image-layer.ts) registers an
+`ImageUserLayer` subclass whose `transformPickedValue` converts every picked
+value to physical units. Without it a packed int16 layer renders correctly but
+the layer bar, the selection panel and CLICK/HOVER all report raw integers.
+Neuroglancer's invlerp / shader-control ranges and the histogram are computed
+from the texture data and remain in raw units.
 
 The 26 colormap ids and their colour data live in
 [@ocean-viewer/colormaps](../../packages/colormaps/); this app compiles the one a

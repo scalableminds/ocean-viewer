@@ -15,13 +15,9 @@
 export const PROTOCOL_NAMESPACE = "ocean-viewer" as const;
 
 /**
- * Identifier of a colormap the viewer can render. A colormap's id is its name;
- * the colour data behind each one lives in `@ocean-viewer/colormaps` and is
- * turned into GLSL by the viewer's `wrapper/colormaps.ts`.
- *
- * The set is the standard ocean-data palette collection: `cmocean`'s
- * oceanographic maps, the perceptually uniform matplotlib maps, and a few
- * legacy ones (`ncview`, `rainbow`) kept for continuity with existing tooling.
+ * Identifier of a colormap the viewer can render. Colour data lives in
+ * `@ocean-viewer/colormaps`: `cmocean`'s oceanographic maps, the perceptually
+ * uniform matplotlib maps, and a few legacy ones (`ncview`, `rainbow`).
  */
 export type ColormapId =
 	| "algae"
@@ -90,13 +86,10 @@ export interface ColormapSpec {
  * One entry in a Neuroglancer viewer state's `layers` array.
  *
  * Only the handful of fields Ocean Viewer reads or writes directly are typed
- * here. Neuroglancer layers are a polymorphic family (image/segmentation/
- * annotation/mesh/...) with many per-type fields not modelled — see the docs
- * linked on {@link NeuroglancerViewerStateJson}. Unlike that type, this one
- * keeps a catch-all index signature: layer shape varies by `type` far more
- * than we model, and without it, spreading a layer (`{ ...layer, ... }`, as
- * `resolveStateColormaps` does) would silently drop those fields from the
- * result's *type* even though they're still present on the actual object.
+ * here; Neuroglancer layers are a polymorphic family (image/segmentation/
+ * annotation/mesh/...) with many per-type fields not modelled. Unlike
+ * {@link NeuroglancerViewerStateJson}, this type keeps a catch-all index
+ * signature, so spreading a layer doesn't silently drop untyped fields.
  */
 export interface NeuroglancerLayerJson {
 	type?: string;
@@ -106,9 +99,10 @@ export interface NeuroglancerLayerJson {
 	/** GLSL fragment shader source (image/volume layers). */
 	shader?: string;
 	/**
-	 * Ocean Viewer extension: resolved into `shader` and stripped before the
-	 * state reaches Neuroglancer. See `resolveStateColormaps` in
-	 * `wrapper/colormaps.ts`.
+	 * Ocean Viewer extension: resolved into `shader` before the state reaches
+	 * Neuroglancer, and kept on the layer afterwards so the viewer's image layer
+	 * can report {@link LayerValue}s in physical units. Neuroglancer ignores
+	 * layer keys it doesn't know.
 	 */
 	oceanColormap?: ColormapSpec;
 	[key: string]: unknown;
@@ -142,16 +136,13 @@ export interface DataPanelLayoutJson {
  * from Neuroglancer's JSON API docs:
  * https://neuroglancer-docs.web.app/json/api/index.html
  *
- * Neuroglancer's own npm package doesn't export this as a type — its state is
- * `any` end-to-end (see `Trackable`/`CompoundTrackable.toJSON()` in
- * `neuroglancer/util/trackable`), so this is derived from the docs above
- * rather than imported. It's a best-effort, non-exhaustive model of the
- * top-level fields (deeper per-layer-type shapes are intentionally left to
- * {@link NeuroglancerLayerJson}'s index signature) — but unlike that type,
- * this one has no catch-all index signature of its own. The top-level schema
- * is small enough to enumerate, so a field this doesn't cover yet should be a
- * compile error at the point of use, not a silently-typed `unknown` — add it
- * here when that happens.
+ * Neuroglancer's own npm package doesn't export this as a type, so it's
+ * derived from the docs above. A best-effort, non-exhaustive model of the
+ * top-level fields (deeper per-layer-type shapes are left to
+ * {@link NeuroglancerLayerJson}'s index signature); unlike that type, this one
+ * has no catch-all index signature, so an uncovered field is a compile error
+ * at the point of use rather than a silently-typed `unknown` — add it here
+ * when that happens.
  */
 export interface NeuroglancerViewerStateJson {
 	dimensions?: Record<string, [scale: number, unit: string]>;
@@ -182,11 +173,9 @@ export interface NeuroglancerViewerStateJson {
 /**
  * Viewer state as exchanged over the Ocean Viewer protocol: Neuroglancer's
  * schema (above) plus the Ocean Viewer-only `oceanAxisUnits` extension — a
- * `{ dimensionName: unitString }` map used to label the X/Y/Z position
- * readouts (e.g. `{ "x": "°E", "y": "°N", "z": "m" }`). Needed because
- * Neuroglancer's coordinate-space units are SI-only and reject `"°"`. The
- * wrapper strips it before handing the state to Neuroglancer — see
- * `wrapper/units.ts` (`setAxisUnits`).
+ * `{ dimensionName: unitString }` map labelling the X/Y/Z position readouts
+ * (e.g. `{ "x": "°E", "y": "°N", "z": "m" }`), needed because Neuroglancer's
+ * coordinate-space units are SI-only and reject `"°"`.
  */
 export type ViewerStateJson = NeuroglancerViewerStateJson & {
 	oceanAxisUnits?: Record<string, string>;
@@ -212,9 +201,9 @@ export interface ConfigMessage {
  * and its bridge is listening, so the portal knows when a CONFIG will be
  * received rather than having to guess with a timeout.
  *
- * Because it precedes any inbound message, the origin handshake has not run
- * yet: unless the viewer was built with a fixed `VITE_PARENT_ORIGIN`, READY is
- * the one message posted to `*`. It carries no payload, so nothing is exposed.
+ * Precedes any inbound message, so unless the viewer was built with a fixed
+ * `VITE_PARENT_ORIGIN`, READY is the one message posted to `*` — it carries no
+ * payload, so nothing is exposed.
  */
 export interface ReadyMessage {
 	type: "READY";
@@ -243,14 +232,16 @@ export interface LayerValue {
 	name: string;
 	/**
 	 * Value at the position, or `null` when the layer has none there — outside
-	 * its bounds, a chunk that hasn't loaded yet, or a non-finite voxel (NaN,
-	 * the missing-data convention).
+	 * its bounds, a chunk that hasn't loaded yet, a non-finite voxel (NaN, the
+	 * missing-data convention), or the layer's `noDataValue` sentinel.
 	 *
 	 * A number for single-channel volumes, an array for multi-channel ones, a
 	 * string for values that don't survive JSON (segmentation ids are `bigint`).
-	 * This is the RAW stored value: {@link ColormapSpec}'s `scaleFactor` /
-	 * `addOffset` packing is not applied, and neither is `noDataValue` — a voxel
-	 * equal to that sentinel is reported as the sentinel, not as `null`.
+	 *
+	 * In PHYSICAL units: an image layer's {@link ColormapSpec} packing
+	 * (`scaleFactor` / `addOffset`) is applied, so the number matches what the
+	 * colours show and what `valueMin` / `valueMax` are expressed in. A layer
+	 * that declares no packing and no sentinel reports its stored value as-is.
 	 */
 	value: number | number[] | string | null;
 }
@@ -287,11 +278,9 @@ export interface ClickMessage extends PointerSample {
  * Outbound: viewer → portal. The pointer moved over the data — same payload as
  * {@link ClickMessage}, for driving a live readout.
  *
- * Throttled by the viewer (see `wrapper/pointer.ts`), and only sent while the
- * pointer is over a data panel with a valid position under it. There is no
- * "pointer left the data" message: the last HOVER stands until the next one, so
- * a readout built from these should be cleared on the portal's own mouse-out if
- * that matters.
+ * Throttled, and only sent while the pointer is over a data panel with a valid
+ * position under it. There is no "pointer left the data" message: the last
+ * HOVER stands until the next one.
  */
 export interface HoverMessage extends PointerSample {
 	type: "HOVER";

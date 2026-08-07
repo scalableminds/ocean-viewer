@@ -1,12 +1,8 @@
 /**
- * Creates the Neuroglancer viewer for the embedded Ocean Viewer and parses the
- * one-off `#!{JSON}` URL hash.
+ * Creates the Neuroglancer viewer and parses the one-off `#!{JSON}` URL hash.
  *
- * This mirrors Neuroglancer's `setupDefaultViewer` but omits the *live* two-way
- * `UrlHashBinding`. In an iframe driven by postMessage that live binding fights
- * inbound CONFIG (it re-asserts the URL hash and reverts programmatic state).
- * Per the spec the hash is a one-off initialisation complement, so we parse it
- * once and hand it to the config applier as an initial full state.
+ * Omits Neuroglancer's live two-way `UrlHashBinding`: in an iframe driven by
+ * postMessage, that would fight inbound CONFIG by re-asserting the URL hash.
  */
 
 import type {
@@ -27,10 +23,9 @@ const DEFAULT_LAYOUT_TYPE = "4panel-alt";
 export function createViewer(target: HTMLElement): Viewer {
 	const viewer = makeDefaultViewer({
 		target,
-		// The viewer is driven externally by MyOcean via CONFIG. Disable the
-		// built-in "empty viewer" behaviour, which otherwise debounces and forces
-		// the layout back to "4panel-alt" and opens a new-layer dialog whenever no
-		// layers are present — clobbering programmatic / hash-seeded state.
+		// Driven externally via CONFIG; disable Neuroglancer's "empty viewer"
+		// behaviour (layout reset + new-layer dialog), which would otherwise
+		// clobber programmatic / hash-seeded state.
 		resetStateWhenEmpty: false,
 		showLayerDialog: false,
 	});
@@ -38,9 +33,8 @@ export function createViewer(target: HTMLElement): Viewer {
 	bindDefaultCopyHandler(viewer);
 	bindDefaultPasteHandler(viewer);
 
-	// Black background outside the data, no scale bars, orthographic 3D camera.
-	// Set before the ConfigApplier captures the pristine state, so these persist
-	// across CONFIGs unless one explicitly overrides them.
+	// Set before ConfigApplier captures the pristine state, so these persist
+	// across CONFIGs unless explicitly overridden.
 	const current = viewer.state.toJSON() as ViewerStateJson;
 	viewer.state.restoreState({
 		crossSectionBackgroundColor: "#000000",
@@ -59,9 +53,8 @@ export function createViewer(target: HTMLElement): Viewer {
  * Expand a layout to the Ocean Viewer default of an orthographic 3D camera,
  * honouring an explicit `orthographicProjection: false`.
  *
- * Neuroglancer keeps the camera type *inside* the layout state and resets it on
- * every layout restore — including the shorthand string form (`"4panel-alt"`),
- * which is why the flag has to be re-attached rather than just set once.
+ * Neuroglancer resets the camera type on every layout restore, so this has to
+ * re-attach the flag rather than set it once.
  */
 export function withOrthographicDefault(
 	layout: ViewerStateJson["layout"],
