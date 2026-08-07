@@ -1,6 +1,7 @@
 /**
- * Emits debounced REPORT messages whenever the viewer state changes due to user
- * interaction.
+ * Emits throttled REPORT messages whenever the viewer state changes due to user
+ * interaction, so continuous interaction (dragging, scrubbing) keeps reporting
+ * at a steady rate instead of staying silent until it stops.
  *
  * Echo suppression: applying an inbound CONFIG also fires `state.changed`, so
  * changes are deduped against the last serialised state. The host calls
@@ -19,7 +20,7 @@ export class Reporter {
 	constructor(
 		private readonly viewer: Viewer,
 		private readonly bridge: Bridge,
-		private readonly debounceMs = 300,
+		private readonly throttleMs = 200,
 	) {
 		this.viewer.state.changed.add(this.schedule);
 	}
@@ -42,9 +43,9 @@ export class Reporter {
 
 	private readonly schedule = (): void => {
 		if (this.timer !== undefined) {
-			clearTimeout(this.timer);
+			return;
 		}
-		this.timer = setTimeout(this.flush, this.debounceMs);
+		this.timer = setTimeout(this.flush, this.throttleMs);
 	};
 
 	private readonly flush = (): void => {

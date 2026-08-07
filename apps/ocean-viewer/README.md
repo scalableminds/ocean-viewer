@@ -25,7 +25,7 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
 | [src/wrapper/viewer.ts](src/wrapper/viewer.ts) | Create the Neuroglancer viewer (no live URL binding) |
 | [src/wrapper/bridge.ts](src/wrapper/bridge.ts) | Origin-restricted `postMessage` in/out |
 | [src/wrapper/config.ts](src/wrapper/config.ts) | Apply CONFIG (full replace / partial merge) |
-| [src/wrapper/report.ts](src/wrapper/report.ts) | Debounced REPORT of viewer state |
+| [src/wrapper/report.ts](src/wrapper/report.ts) | Throttled REPORT of viewer state |
 | [src/wrapper/pointer.ts](src/wrapper/pointer.ts) | CLICK / throttled HOVER with per-layer values |
 | [src/wrapper/image-layer.ts](src/wrapper/image-layer.ts) | Image layer reporting values in physical units |
 | [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) | CONFIG / READY / REPORT / CLICK / HOVER message contract |
@@ -40,7 +40,7 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
   camera position/orientation unless explicitly included.
 - **READY** (outbound): sent once when the viewer is initialised and the bridge is
   listening. The parent should wait for it before sending its first CONFIG.
-- **REPORT** (outbound): debounced serialised state after user interaction.
+- **REPORT** (outbound): throttled serialised state after user interaction.
 - **CLICK** (outbound): the global-coordinate position clicked in a data panel,
   plus the value each visible layer has there, in physical units. Drags
   (pan/rotate) are not clicks.

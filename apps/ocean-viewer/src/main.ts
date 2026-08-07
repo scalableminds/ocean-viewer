@@ -21,7 +21,7 @@ import "./chrome.css";
  * then attaches the MyOcean postMessage bridge:
  *   - inbound CONFIG  → applied to the viewer state (full or partial)
  *   - outbound READY  → sent once when the bridge is listening
- *   - outbound REPORT → debounced serialised state after user interaction
+ *   - outbound REPORT → throttled serialised state after user interaction
  *   - outbound CLICK  → position + per-layer values for a click in a data panel
  *   - outbound HOVER  → the same, throttled, as the pointer moves over the data
  *
