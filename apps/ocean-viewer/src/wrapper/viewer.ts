@@ -16,6 +16,10 @@ import {
 import { setDefaultInputEventBindings } from "neuroglancer/unstable/ui/default_input_event_bindings.js";
 import { makeDefaultViewer } from "neuroglancer/unstable/ui/default_viewer.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
+import {
+	disableRotationBindings,
+	swapWheelBindings,
+} from "./input-bindings.js";
 
 /** Fallback when the layout being normalised doesn't name a type itself. */
 const DEFAULT_LAYOUT_TYPE = "4panel-alt";
@@ -32,6 +36,11 @@ export function createViewer(target: HTMLElement): Viewer {
 		showTopBar: false,
 	});
 	setDefaultInputEventBindings(viewer.inputEventBindings);
+	// Wheel zooms, ctrl + wheel moves through the third dimension — the inverse
+	// of Neuroglancer's defaults — and shift + direction no longer tilts a
+	// cross-section out of axis alignment.
+	swapWheelBindings();
+	disableRotationBindings();
 	bindDefaultCopyHandler(viewer);
 	bindDefaultPasteHandler(viewer);
 
