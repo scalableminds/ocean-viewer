@@ -28,6 +28,8 @@ export function createViewer(target: HTMLElement): Viewer {
 		// clobber programmatic / hash-seeded state.
 		resetStateWhenEmpty: false,
 		showLayerDialog: false,
+		// Drop the whole top row: the position / mouse-position readouts
+		showTopBar: false,
 	});
 	setDefaultInputEventBindings(viewer.inputEventBindings);
 	bindDefaultCopyHandler(viewer);

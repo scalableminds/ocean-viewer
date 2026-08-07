@@ -8,7 +8,6 @@ import { ConfigApplier } from "./wrapper/config.js";
 import { registerOceanImageLayer } from "./wrapper/image-layer.js";
 import { PointerForwarder } from "./wrapper/pointer.js";
 import { Reporter } from "./wrapper/report.js";
-import { installUnitLabels } from "./wrapper/units.js";
 import { createViewer, parseHashState } from "./wrapper/viewer.js";
 import { ViewportControls } from "./wrapper/viewport-controls.js";
 
@@ -40,7 +39,6 @@ function bootstrap(): void {
 	registerOceanImageLayer();
 
 	const viewer = createViewer(target);
-	installUnitLabels(viewer);
 	new ViewportControls(viewer);
 	// Expose for debugging / automation.
 	(window as unknown as { viewer: unknown; oceanViewer: unknown }).viewer =

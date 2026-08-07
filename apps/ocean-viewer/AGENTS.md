@@ -71,7 +71,9 @@ an interactive parent-side harness, see
   (e.g. inverting x/y — see the example).
 - **Hiding Neuroglancer UI:** done in [src/chrome.css](src/chrome.css) (CSS
   `display:none` on chrome classes), loaded last so it overrides NG's stylesheet.
-  Keep the top-row **position widget** (X/Y/Z readout).
+  The exception is the **top row** (position / mouse readouts + toolbar), turned
+  off at the source with NG's `showTopBar: false` in
+  [src/wrapper/viewer.ts](src/wrapper/viewer.ts). The per-layer tab bar stays.
 - Match the surrounding code style. Keep `tsc` clean (`strict`, no unused).
 
 ## Don't

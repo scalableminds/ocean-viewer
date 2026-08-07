@@ -25,7 +25,7 @@ type Message = {
 | Portal → Viewer | `CONFIG` | Set or update viewer state |
 | Viewer → Portal | `READY` | Viewer initialized; CONFIG can be sent |
 | Viewer → Portal | `REPORT` | Full state after user interaction |
-| Viewer → Portal | `CLICK` | World + geographic position of a click |
+| Viewer → Portal | `CLICK` | World position of a click, plus per-layer values |
 
 ### READY
 
@@ -56,20 +56,18 @@ The first CONFIG a viewer receives is treated as full state (applied with a rese
 ```ts
 {
   type: "CLICK";
-  world: number[];                    // raw world-space position
-  geographic: {
-    longitude: number; latitude: number; depth: number;
-    extra?: Record<string, number>;   // other dims, e.g. { time: 17 }
-    units?: Record<string, string>;   // per-axis physical units
-  };
+  world: number[];                    // raw world-space position, in the
+                                      // axis order of the state's `dimensions`
+  layers: {                           // one entry per visible layer
+    name: string;
+    value: number | number[] | string | null;   // physical units; null = no value
+  }[];
 }
 ```
 
 ## ViewerStateJson
 
-Neuroglancer's JSON viewer-state schema ([docs](https://neuroglancer-docs.web.app/json/api/index.html)) plus one Ocean Viewer extension:
-
-- `oceanAxisUnits?: Record<string, string>` — e.g. `{ "x": "°E", "y": "°N", "z": "m" }`. Labels the X/Y/Z position readouts; Neuroglancer's own coordinate units are SI-only, so this is stripped before the state reaches Neuroglancer.
+Neuroglancer's JSON viewer-state schema ([docs](https://neuroglancer-docs.web.app/json/api/index.html)), unextended at the top level — the one Ocean Viewer extension is the per-layer `oceanColormap` below.
 
 Core Neuroglancer fields (all optional): `dimensions`, `position`, `layers`, `layout`, camera (`crossSection*`, `projection*`), display toggles (`showAxisLines`, `showScaleBar`, `showSlices`, …), perf limits (`gpuMemoryLimit`, `concurrentDownloads`, `prefetch`, …). Neuroglancer's state is untyped end-to-end — this is hand-modeled from its docs, not imported from a package.
 
@@ -87,8 +85,8 @@ Layers re-use the [Neuroglancer API](https://neuroglancer-docs.web.app/json/api/
 | `noDataValue` | number | — | raw-value sentinel for missing data, checked before scale/offset (NaN and CMEMS's ~9.969e36 fill are always treated as missing regardless) |
 | `scaleFactor` / `addOffset` | number | `1` / `0` | CF packing: `physical = raw * scaleFactor + addOffset` |
 
-`oceanColormap` is compiled into the layer `shader` but, unlike `oceanAxisUnits`,
-is **kept** on the layer: `scaleFactor`/`addOffset`/`noDataValue` say what a
+`oceanColormap` is compiled into the layer `shader` but is **kept** on the
+layer rather than stripped: `scaleFactor`/`addOffset`/`noDataValue` say what a
 stored number means, and the viewer's image layer applies them to every value
 readout (the layer bar, the selection panel, and `CLICK`/`HOVER`). Neuroglancer
 ignores layer keys it doesn't know, so the state stays valid for a stock
@@ -121,10 +119,6 @@ A real CONFIG message, exactly as the `my-ocean-mock` demo posts it (see `apps/m
       "x": [1, ""],
       "y": [1, ""],
       "elevation": [1, ""]
-    },
-    "oceanAxisUnits": {
-      "x": "°E",
-      "y": "°N"
     },
     "position": [0, 0, 0],
     "crossSectionScale": 0.9,

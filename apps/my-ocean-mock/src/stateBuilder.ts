@@ -80,7 +80,6 @@ const DIMENSIONS: Record<string, [number, string]> = {
 export function buildFullState(layers: Layer[]): ViewerStateJson {
 	return {
 		dimensions: DIMENSIONS,
-		oceanAxisUnits: { x: "°E", y: "°N" },
 		position: [0, 0, 0],
 		crossSectionScale: 0.9,
 		projectionScale: 2048,

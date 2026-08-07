@@ -31,7 +31,7 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
 | [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) | CONFIG / READY / REPORT / CLICK / HOVER message contract |
 | [@ocean-viewer/colormaps](../../packages/colormaps/src/index.ts) | Colour data behind each colormap id |
 | [@ocean-viewer/colormaps/shader](../../packages/colormaps/src/shader.ts) | Named colormap → GLSL shader resolver |
-| [src/chrome.css](src/chrome.css) | Hides Neuroglancer's built-in UI chrome (CSS-only) |
+| [src/chrome.css](src/chrome.css) | Hides Neuroglancer's remaining built-in UI chrome (CSS-only) |
 
 ## Parent ↔ iframe protocol
 
@@ -43,8 +43,7 @@ A thin TypeScript wrapper around the `neuroglancer` npm package:
 - **REPORT** (outbound): debounced serialised state after user interaction.
 - **CLICK** (outbound): the global-coordinate position clicked in a data panel,
   plus the value each visible layer has there, in physical units. Drags
-  (pan/rotate) are not clicks. The `geographic` lon/lat/depth conversion is not
-  implemented yet.
+  (pan/rotate) are not clicks.
 - **HOVER** (outbound): the same payload as CLICK as the pointer moves over the
   data, throttled to one message per 100 ms (leading edge plus a trailing send)
   and skipped when the readout is unchanged.
@@ -93,20 +92,6 @@ The 26 colormap ids and their colour data live in
 [@ocean-viewer/colormaps](../../packages/colormaps/); this app compiles the one a
 layer names into a GLSL `cmap()` function, since Neuroglancer itself only ships
 `colormapJet`/`colormapCubehelix`.
-
-## Axis units
-
-The X/Y/Z position readout is labelled with physical units supplied via the
-top-level CONFIG field `oceanAxisUnits` (a dimension-name → unit map):
-
-```json
-"oceanAxisUnits": { "x": "°E", "y": "°N", "z": "m" }
-```
-
-This is an Ocean Viewer extension (resolved in [src/wrapper/units.ts](src/wrapper/units.ts))
-rather than Neuroglancer coordinate-space units, because Neuroglancer's units
-are SI-only and reject strings like `"°"`. The labels are matched by dimension
-name and re-applied when the coordinate space changes.
 
 See [examples/thetao.config.json](examples/thetao.config.json) for a complete,
 working CONFIG payload. For an interactive parent mock — a layer panel with

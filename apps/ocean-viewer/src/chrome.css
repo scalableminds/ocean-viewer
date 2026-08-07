@@ -7,20 +7,12 @@
  * Loaded after Neuroglancer's own stylesheet so these rules win; `!important`
  * guards against Neuroglancer's inline/specificity.
  *
- * We deliberately KEEP the top row's position readout (`position-widget` and
- * `mouse-position-widget` give the X/Y/Z coordinates) and only strip the
- * interactive controls beside it. We also KEEP the per-layer tab bar itself
- * (it's useful for seeing/selecting layers) while hiding its add/remove/
+ * The top row (position / mouse-position readouts plus the toolbar buttons) is
+ * not hidden here — `wrapper/viewer.ts` turns it off at the source with
+ * Neuroglancer's own `showTopBar: false` option. We do KEEP the per-layer tab
+ * bar (it's useful for seeing/selecting layers) while hiding its add/remove/
  * delete controls, since layers are managed entirely by MyOcean.
  */
-
-/* Top toolbar: hide the control buttons (settings, help, layer list, undo/redo,
-   screenshot, ...) and the tool palette, but keep the position widgets. */
-.neuroglancer-viewer-top-row > .neuroglancer-icon,
-.neuroglancer-viewer-top-row > .neuroglancer-tool-palette-button,
-.neuroglancer-viewer-top-row > .neuroglancer-annotation-tool-status {
-	display: none !important;
-}
 
 /* Layer bar: keep the per-layer tabs, but hide the "+" add-layer button
    (layers are managed entirely by MyOcean, not by the end user). */
@@ -84,14 +76,4 @@
 .ocean-viewport-controls button:hover {
 	background: rgb(255 255 255 / 15%);
 	color: #fff;
-}
-
-/* Physical-unit suffix appended after each X/Y/Z coordinate readout
-   (injected by wrapper/units.ts from the coordinate space's units). */
-.ocean-unit-label {
-	margin: 0 0.5ch 0 0.2ch;
-	color: #9aa0a6;
-	font-size: 0.9em;
-	pointer-events: none;
-	white-space: pre;
 }

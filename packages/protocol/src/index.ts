@@ -88,8 +88,8 @@ export interface ColormapSpec {
  * Only the handful of fields Ocean Viewer reads or writes directly are typed
  * here; Neuroglancer layers are a polymorphic family (image/segmentation/
  * annotation/mesh/...) with many per-type fields not modelled. Unlike
- * {@link NeuroglancerViewerStateJson}, this type keeps a catch-all index
- * signature, so spreading a layer doesn't silently drop untyped fields.
+ * {@link ViewerStateJson}, this type keeps a catch-all index signature, so
+ * spreading a layer doesn't silently drop untyped fields.
  */
 export interface NeuroglancerLayerJson {
 	type?: string;
@@ -132,8 +132,9 @@ export interface DataPanelLayoutJson {
 }
 
 /**
- * The Neuroglancer viewer-state JSON schema (the `#!{...}` format), hand-typed
- * from Neuroglancer's JSON API docs:
+ * Viewer state as exchanged over the Ocean Viewer protocol: the Neuroglancer
+ * viewer-state JSON schema (the `#!{...}` format), hand-typed from
+ * Neuroglancer's JSON API docs:
  * https://neuroglancer-docs.web.app/json/api/index.html
  *
  * Neuroglancer's own npm package doesn't export this as a type, so it's
@@ -143,8 +144,11 @@ export interface DataPanelLayoutJson {
  * has no catch-all index signature, so an uncovered field is a compile error
  * at the point of use rather than a silently-typed `unknown` — add it here
  * when that happens.
+ *
+ * There is no top-level Ocean Viewer extension; the only one is per-layer
+ * (`oceanColormap`).
  */
-export interface NeuroglancerViewerStateJson {
+export interface ViewerStateJson {
 	dimensions?: Record<string, [scale: number, unit: string]>;
 	relativeDisplayScales?: number[];
 	displayDimensions?: string[];
@@ -169,17 +173,6 @@ export interface NeuroglancerViewerStateJson {
 	prefetch?: boolean;
 	title?: string;
 }
-
-/**
- * Viewer state as exchanged over the Ocean Viewer protocol: Neuroglancer's
- * schema (above) plus the Ocean Viewer-only `oceanAxisUnits` extension — a
- * `{ dimensionName: unitString }` map labelling the X/Y/Z position readouts
- * (e.g. `{ "x": "°E", "y": "°N", "z": "m" }`), needed because Neuroglancer's
- * coordinate-space units are SI-only and reject `"°"`.
- */
-export type ViewerStateJson = NeuroglancerViewerStateJson & {
-	oceanAxisUnits?: Record<string, string>;
-};
 
 /** Inbound: portal → viewer. */
 export interface ConfigMessage {
@@ -213,17 +206,6 @@ export interface ReadyMessage {
 export interface ReportMessage {
 	type: "REPORT";
 	state: ViewerStateJson;
-}
-
-/** Geographic coordinates derived from a world-space click. */
-export interface GeographicCoordinate {
-	longitude: number;
-	latitude: number;
-	depth: number;
-	/** Any additional (non-spatial) dimensions, e.g. `time`, keyed by name. */
-	extra?: Record<string, number>;
-	/** Physical units per geographic/extra axis, when known. */
-	units?: Record<string, string>;
 }
 
 /** The value one layer has at a pointed-at position. */
@@ -265,13 +247,9 @@ export interface PointerSample {
  *
  * Only emitted for an actual click: a pan/rotate drag ends with a DOM click too,
  * and those are filtered out.
- *
- * {@link geographic} is not populated yet — the wrapper currently reports only
- * the {@link PointerSample} fields.
  */
 export interface ClickMessage extends PointerSample {
 	type: "CLICK";
-	geographic?: GeographicCoordinate;
 }
 
 /**

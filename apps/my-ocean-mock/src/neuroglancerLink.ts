@@ -3,10 +3,9 @@
  * stock Neuroglancer instance, so the exact same state can be opened, poked at
  * and shared outside the embedded viewer.
  *
- * The state has to be de-Ocean-ified first: `oceanAxisUnits` (no stock
- * equivalent, dropped) and each layer's `oceanColormap` (compiled into the
- * layer `shader`, then stripped — a stock instance has no use for it once the
- * shader exists).
+ * The state has to be de-Ocean-ified first: each layer's `oceanColormap` is
+ * compiled into the layer `shader`, then stripped — a stock instance has no use
+ * for it once the shader exists.
  */
 
 import {
@@ -22,7 +21,8 @@ const NEUROGLANCER_URL =
 
 /** `#!`-encoded Neuroglancer URL for `state`. */
 export function toNeuroglancerUrl(state: ViewerStateJson): string {
-	const { oceanAxisUnits: _dropped, ...rest } = state;
-	const json = JSON.stringify(stripOceanColormaps(resolveStateColormaps(rest)));
+	const json = JSON.stringify(
+		stripOceanColormaps(resolveStateColormaps(state)),
+	);
 	return `${NEUROGLANCER_URL}#!${encodeURIComponent(json)}`;
 }
