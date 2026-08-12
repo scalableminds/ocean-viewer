@@ -35,6 +35,7 @@ const SECTIONS: ReadonlyArray<{
 			{ action: "Zoom", inputs: ["scroll"] },
 			{ action: "Move up / down a level", inputs: ["ctrl + scroll", ",", "."] },
 			{ action: "Step through time", inputs: ["[", "]"] },
+			{ action: "Rotate by 15°", inputs: ["↺ ↻"] },
 		],
 	},
 	{

@@ -1,10 +1,10 @@
 /**
- * A small button cluster overlaid on the 3D panel for recovering the camera.
+ * Small button clusters overlaid on a panel's top-right corner. The Ocean Viewer
+ * hides Neuroglancer's own per-panel controls and its key bindings are
+ * undiscoverable in an iframe, so anything the user needs to reach has to be a
+ * visible button.
  *
- * Neuroglancer's perspective panel rotates freely on left-drag with no undo,
- * and the Ocean Viewer hides Neuroglancer's own per-panel controls, so an
- * embedded user who tumbles the camera has no way back (a keyboard shortcut
- * is undiscoverable in an iframe).
+ * On the 3D panel, for recovering a camera tumbled by an undoable left-drag:
  *
  *   ⌂   reset — identity orientation plus a zoom recomputed to fit the data
  *   XY  ·  XZ  ·  YZ — align the camera with that principal plane
@@ -12,14 +12,24 @@
  * Only the orientation (and, for ⌂, the zoom) is touched — the perspective
  * navigation state shares its `Position` with the cross-section one, so
  * resetting it would drag the three 2D panels along with the 3D camera.
+ *
+ * On the XY cross-section, for turning the data within the viewing plane —
+ * the one rotation the Ocean Viewer keeps, now that `input-bindings.ts` has
+ * removed the gestures that did it by accident:
+ *
+ *   ↺  ·  ↻ — rotate by {@link ROTATION_STEP_DEGREES}° per press
  */
 
 import type { RenderedPanel } from "neuroglancer/unstable/display_context.js";
+import type { NavigationState } from "neuroglancer/unstable/navigation_state.js";
 import type { RenderedDataPanel } from "neuroglancer/unstable/rendered_data_panel.js";
-import { quat } from "neuroglancer/unstable/util/geom.js";
+import { kAxes, quat } from "neuroglancer/unstable/util/geom.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
 
 const CONTROLS_CLASS = "ocean-viewport-controls";
+
+/** Turn per press of ↺ / ↻, small enough to nudge a map into alignment. */
+const ROTATION_STEP_DEGREES = 15;
 
 /**
  * Marks DOM injected by the Ocean wrapper rather than by Neuroglancer. Read by
@@ -81,14 +91,16 @@ export class ViewportControls {
 		}
 	}
 
-	/** Ensure every perspective panel — and only those — carries one overlay. */
+	/** Ensure the 3D panel and the XY cross-section each carry one overlay. */
 	private readonly apply = (): void => {
 		for (const panel of this.viewer.display.panels) {
-			if (
-				this.isPerspectivePanel(panel) &&
-				panel.element.querySelector(`:scope > .${CONTROLS_CLASS}`) === null
-			) {
-				panel.element.appendChild(this.build());
+			if (panel.element.querySelector(`:scope > .${CONTROLS_CLASS}`) !== null) {
+				continue;
+			}
+			if (this.isPerspectivePanel(panel)) {
+				panel.element.appendChild(this.buildCameraControls());
+			} else if (this.isXyPanel(panel)) {
+				panel.element.appendChild(this.buildRotationControls(panel));
 			}
 		}
 	};
@@ -105,7 +117,33 @@ export class ViewportControls {
 		);
 	}
 
-	private build(): HTMLElement {
+	/**
+	 * Identify the XY cross-section by its orientation. Neuroglancer builds that
+	 * panel straight on the layer group's own pose and derives xz / yz from it
+	 * with a fixed quarter turn, so it is the one cross-section whose orientation
+	 * matches the viewer's — which stays true after the data has been rotated.
+	 *
+	 * A layout without an XY panel (`xz`, `yz`) simply gets no rotation buttons.
+	 */
+	private isXyPanel(panel: RenderedPanel): panel is RenderedDataPanel {
+		const candidate = panel as RenderedPanel & {
+			inputEventMap?: unknown;
+			navigationState?: NavigationState;
+		};
+		if (
+			candidate.inputEventMap !== this.viewer.inputEventBindings.sliceView ||
+			candidate.navigationState === undefined
+		) {
+			return false;
+		}
+		return quat.equals(
+			candidate.navigationState.pose.orientation.orientation,
+			this.viewer.navigationState.pose.orientation.orientation,
+		);
+	}
+
+	/** A cluster shell: positioned by CSS, and inert as far as the panel knows. */
+	private cluster(): HTMLElement {
 		const root = document.createElement("div");
 		root.className = CONTROLS_CLASS;
 		root.setAttribute(OVERLAY_ATTRIBUTE, "");
@@ -115,6 +153,44 @@ export class ViewportControls {
 		for (const type of ["mousedown", "click", "wheel", "dblclick"] as const) {
 			root.addEventListener(type, (event) => event.stopPropagation());
 		}
+
+		return root;
+	}
+
+	/**
+	 * Turning the cross-section's own pose, rather than the viewer's, is what
+	 * keeps this working when a layer group's navigation state is unlinked from
+	 * the viewer's. Neuroglancer mirrors the turn onto the xz / yz panels, since
+	 * their orientations are derived from this one; the 3D camera has its own
+	 * orientation and stays put.
+	 */
+	private buildRotationControls(panel: RenderedDataPanel): HTMLElement {
+		const root = this.cluster();
+		const rotate = (sign: number) => () => {
+			panel.navigationState.pose.rotateRelative(
+				kAxes[2],
+				(sign * ROTATION_STEP_DEGREES * Math.PI) / 180,
+			);
+		};
+		root.appendChild(
+			this.button(
+				"↺",
+				`Rotate the data ${ROTATION_STEP_DEGREES}° counter-clockwise`,
+				rotate(1),
+			),
+		);
+		root.appendChild(
+			this.button(
+				"↻",
+				`Rotate the data ${ROTATION_STEP_DEGREES}° clockwise`,
+				rotate(-1),
+			),
+		);
+		return root;
+	}
+
+	private buildCameraControls(): HTMLElement {
+		const root = this.cluster();
 
 		root.appendChild(
 			this.button("⌂", "Reset the 3D camera (orientation and zoom)", () => {
