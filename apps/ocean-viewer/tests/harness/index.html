@@ -3,6 +3,15 @@
 	<head>
 		<meta charset="UTF-8" />
 		<title>Ocean Viewer smoke harness</title>
+		<!--
+			Empty data: icon so Chromium doesn't request /favicon.ico, which this
+			fixture doesn't serve. Its 404 surfaces only as a bare console "Failed to
+			load resource" — no `response` event, no URL — which tripped the
+			console-errors assertion in smoke.spec.ts with nothing to explain it. The
+			request is low priority, so whether it lands before the test finishes is a
+			race: it flaked on CI runners and passed locally.
+		-->
+		<link rel="icon" href="data:," />
 	</head>
 	<body>
 		<div id="host"></div>
