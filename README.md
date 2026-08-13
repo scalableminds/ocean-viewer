@@ -31,9 +31,25 @@ npm install
 ## Run
 
 ```sh
-npm run dev -w ocean-viewer    # http://localhost:5174
+npm run dev -w @scalableminds/ocean-viewer  # http://localhost:5174
 npm run dev -w my-ocean-mock   # http://localhost:5180 (separate terminal)
 ```
 
 Other useful root-level scripts (fan out to both apps): `npm run typecheck`,
 `npm run build`, `npm run check` (Biome lint + format).
+
+## Releases
+
+**`apps/ocean-viewer` is the only shippable workspace.** It is released as
+`@scalableminds/ocean-viewer`: a single self-contained `npm pack` tarball attached to
+each [GitHub release](https://github.com/scalableminds/ocean-viewer/releases). There
+is no npm registry, no GitHub Packages and no CDN — consumers self-host the bundle.
+
+- **Embedding it?** Read [apps/ocean-viewer/README.md](apps/ocean-viewer/README.md):
+  both install paths, the exact URLs, hosting notes and version pinning.
+- **Changing it?** Read [CONTRIBUTING.md](CONTRIBUTING.md): how to write a changeset,
+  what counts as a breaking change, and how a release is cut.
+
+Versioning is driven by [changesets](https://github.com/changesets/changesets).
+Every change carries a `.changeset/*.md` entry; merging the generated
+`chore: release` PR is the only manual step in the release.

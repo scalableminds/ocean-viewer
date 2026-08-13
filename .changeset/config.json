@@ -1,0 +1,16 @@
+{
+	"$schema": "https://unpkg.com/@changesets/config@4.0.0/schema.json",
+	"changelog": [
+		"@changesets/changelog-github",
+		{ "repo": "scalableminds/ocean-viewer" }
+	],
+	"commit": false,
+	"baseBranch": "main",
+	"format": false,
+	"privatePackages": { "version": true, "tag": true },
+	"ignore": [
+		"my-ocean-mock",
+		"@ocean-viewer/protocol",
+		"@ocean-viewer/colormaps"
+	]
+}

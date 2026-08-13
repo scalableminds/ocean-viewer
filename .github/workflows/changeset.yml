@@ -1,0 +1,50 @@
+name: Changeset
+
+on:
+  pull_request:
+    branches: [main]
+    # labeled/unlabeled so adding `no-changeset` re-runs the check.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changeset:
+    name: Changeset required
+    # `${{ }}` is required: a bare YAML scalar cannot start with `!`.
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changeset') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Fetch the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        # checkout sets a narrow refspec, so origin/<base> may not exist. No --depth:
+        # `changeset status` runs `git merge-base`.
+        run: git fetch --no-tags origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+
+      - name: Changeset bodies carry a change tag
+        run: npm run lint:changesets
+
+      # Exits non-zero only when a versionable package changed with no changeset.
+      # Note the ignored workspaces: a PR touching only packages/protocol or
+      # my-ocean-mock won't be asked for one. See CONTRIBUTING.md.
+      - name: A changeset is present for the released package
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: npm exec --no -- changeset status --since="origin/$BASE_REF"

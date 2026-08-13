@@ -4,17 +4,21 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   check:
     name: Lint, Format & Typecheck
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci
@@ -24,3 +28,65 @@ jobs:
 
       - name: TypeScript typecheck
         run: npm run typecheck
+
+  smoke:
+    name: Smoke test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Not --omit=dev: the shipped package declares `dependencies: {}`, so the
+      # whole toolchain is devDependencies.
+      - run: npm ci
+
+      - name: Resolve Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      # Full Chromium, not --only-shell: Neuroglancer needs WebGL2 and
+      # EXT_color_buffer_float. See playwright.config.ts.
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
+
+      - name: Build
+        run: npm run build -w @scalableminds/ocean-viewer
+
+      # Packs the tarball and loads it from a nonsense sub-path, so a wrong `files`
+      # field or an absolute asset URL fails here rather than post-release.
+      - name: Smoke test
+        run: npm run test:smoke -w @scalableminds/ocean-viewer
+
+      - name: The shipped package has no runtime dependencies
+        run: |
+          node -e '
+            const { dependencies = {} } = require("./apps/ocean-viewer/package.json");
+            const names = Object.keys(dependencies);
+            if (names.length > 0) {
+              console.error(
+                "The viewer must ship with zero runtime dependencies, found: " +
+                  names.join(", ") +
+                  "\nEverything is bundled by Vite; move it to devDependencies."
+              );
+              process.exit(1);
+            }
+            console.log("dependencies: {} — ok");
+          '
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: apps/ocean-viewer/test-results/
+          retention-days: 7

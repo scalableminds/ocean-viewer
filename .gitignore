@@ -6,3 +6,12 @@ dist
 
 .claude
 .env
+
+
+# Release artefacts, produced by .github/workflows/release.yml and reproducible locally.
+release-assets
+release-notes.md
+
+# Playwright
+test-results
+playwright-report

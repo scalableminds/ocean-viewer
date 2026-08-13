@@ -31,7 +31,7 @@ share one install at the repo root:
 ```sh
 # in the repo root
 npm install                 # see note below if it errors
-npm run dev -w ocean-viewer   # Ocean Viewer at http://localhost:5174
+npm run dev -w @scalableminds/ocean-viewer  # Ocean Viewer at http://localhost:5174
 npm run dev -w my-ocean-mock  # mock portal at http://localhost:5180 (separate terminal)
 ```
 
