@@ -106,8 +106,11 @@ test.describe("packaged bundle", () => {
 	test("loads from a sub-path and applies a CONFIG", async ({ page }) => {
 		const failures: string[] = [];
 		const consoleErrors: string[] = [];
+		// Both origins, not just the viewer's: the console error for a 404 carries no
+		// URL, so a host-page miss would otherwise fail the assertion below without
+		// saying what was missing.
 		page.on("response", (r) => {
-			if (r.url().startsWith(viewerOrigin) && r.status() >= 400) {
+			if (r.status() >= 400) {
 				failures.push(`${r.status()} ${r.url()}`);
 			}
 		});
