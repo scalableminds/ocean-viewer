@@ -11,12 +11,12 @@ Every message is a plain JSON object:
 ```ts
 type Message = {
   namespace: "ocean-viewer";
-  type: "CONFIG" | "READY" | "REPORT" | "CLICK";
+  type: "CONFIG" | "READY" | "REPORT" | "CLICK" | "HOVER";
   state: ViewerStateJson;
 };
 ```
 
-`type` discriminates the payload: `"CONFIG"` (inbound), `"READY"` | `"REPORT"` | `"CLICK"` (outbound). This shape check alone only distinguishes Ocean Viewer traffic from other `postMessage` noise on the same window — it doesn't check sender origin. The viewer's bridge does that separately: it locks onto the parent's origin (configured at build time, or the first valid sender as a handshake) and rejects every other origin after that.
+`type` discriminates the payload: `"CONFIG"` (inbound), `"READY"` | `"REPORT"` | `"CLICK"` | `"HOVER"` (outbound). This shape check alone only distinguishes Ocean Viewer traffic from other `postMessage` noise on the same window — it doesn't check sender origin. The viewer's bridge does that separately: it locks onto the parent's origin (configured at build time, or the first valid sender as a handshake) and rejects every other origin after that.
 
 ## Messages
 
@@ -26,6 +26,7 @@ type Message = {
 | Viewer → Portal | `READY` | Viewer initialized; CONFIG can be sent |
 | Viewer → Portal | `REPORT` | Full state after user interaction |
 | Viewer → Portal | `CLICK` | World position of a click, plus per-layer values |
+| Viewer → Portal | `HOVER` | The same payload as `CLICK`, throttled, as the pointer moves |
 
 ### READY
 

@@ -29,6 +29,11 @@ See [README.md](README.md) for the user-facing overview.
    `resetStateWhenEmpty: false` and `showLayerDialog: false`, or Neuroglancer
    force-resets the layout to `4panel-alt` and opens a new-layer dialog whenever
    there are no layers, clobbering injected state.
+6. **`dependencies` must stay empty.** Consumers install a tarball and self-host
+   it; the `@ocean-viewer/*` workspace packages are never published, so anything
+   in `dependencies` either fails to resolve or drags a redundant copy of a
+   bundled library into their tree. Everything is a devDependency and bundled by
+   Vite. CI asserts this — and so never use `npm ci --omit=dev` in a build job.
 
 ## Run & verify
 
@@ -37,7 +42,12 @@ npm install        # if it fails on the ikonate git dep, see README install note
 npm run dev        # http://localhost:5174
 npm run typecheck  # tsc --noEmit — must stay clean
 npm run build
+npm run test:smoke # packs the tarball and loads it from a sub-path
 ```
+
+Run `test:smoke` after any change to the bundler, the worker setup or
+`index.html` — it catches the same class of breakage as golden rules 1 and 2,
+minus the real-data half, which still needs a human (rule 2).
 
 Local verification uses the **Claude preview tools** driving a server defined in
 `.claude/launch.json`. To drive the viewer without the parent

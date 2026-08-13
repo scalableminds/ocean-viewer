@@ -1,0 +1,143 @@
+name: Release
+
+# Only one path runs on a given push:
+#   1. changesets pending  -> open/update the "chore: release" PR, nothing else
+#   2. release PR merged (version bumped, no changesets left) -> build, pack,
+#      attest, create the GitHub release
+#
+# Path 2 is guarded on the `v<version>` tag already existing, so re-running on the
+# same commit is a no-op. We don't give changesets/action a publish script: it would
+# run on every push with no pending changesets, and `changeset git-tag` can only
+# produce `<name>@<version>` tags, whereas releases here are plain `v<version>`.
+#
+# ONE-TIME SETUP (human, never an agent): push a `v0.1.0` tag at the current main so
+# the guard can't retroactively release it, and make sure the PR landing this
+# workflow includes a changeset.
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # A cancelled release can leave a tag with no assets.
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write # OIDC, for build provenance
+  attestations: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # changesets' changelog links and `git merge-base` need real history.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          # No registry-url: nothing is published to a registry, so there is no
+          # .npmrc to write and no NPM_TOKEN anywhere.
+
+      # Not --omit=dev: the shipped package declares `dependencies: {}`, so the
+      # whole toolchain is devDependencies.
+      - run: npm ci
+
+      - name: Open or update the release PR
+        uses: changesets/action@065f2d3954bd325384f7a1a83e6fb07847a087c2 # v2.0.0
+        with:
+          version-script: npm run version
+          commit-message: "chore: release"
+          pr-title: "chore: release"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Is this version already released?
+        id: gate
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./apps/ocean-viewer/package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version"    >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "v$version is already tagged; nothing to release."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "v$version is not tagged yet; releasing."
+          fi
+
+      # After the bump, so dist/version.json reports the version being released.
+      - name: Build and smoke-test
+        if: steps.gate.outputs.release == 'true'
+        run: |
+          set -euo pipefail
+          # Pin the build timestamp to the commit's so rebuilding a tag is
+          # byte-identical (read by vite-plugins/emit-build-metadata.ts).
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          npx playwright install chromium
+          npm run release
+
+      - name: Pack
+        if: steps.gate.outputs.release == 'true'
+        env:
+          ASSET: ocean-viewer-${{ steps.gate.outputs.version }}.tgz
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          npm pack -w @scalableminds/ocean-viewer --pack-destination release-assets
+          # npm names a scoped tarball scalableminds-ocean-viewer-<v>.tgz; the asset
+          # names are friendlier copies. Only the dependency key has to match the
+          # package name, not the filename in the URL.
+          packed="release-assets/scalableminds-ocean-viewer-${{ steps.gate.outputs.version }}.tgz"
+          test -f "$packed"
+          mv "$packed" "release-assets/$ASSET"
+          # Fixed filename so /releases/latest/download/ocean-viewer.tgz resolves.
+          cp "release-assets/$ASSET" release-assets/ocean-viewer.tgz
+          ls -l release-assets
+
+      # One step, two subjects: attestations bind to the digest and the assets are
+      # byte-identical copies. Public-repo-only on GitHub Team, so this self-enables
+      # when the repository goes public.
+      - name: Attest build provenance
+        if: >-
+          steps.gate.outputs.release == 'true' &&
+          github.event.repository.private == false
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            release-assets/ocean-viewer-${{ steps.gate.outputs.version }}.tgz
+            release-assets/ocean-viewer.tgz
+
+      - name: Create the GitHub release
+        if: steps.gate.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.gate.outputs.tag }}
+          VERSION: ${{ steps.gate.outputs.version }}
+          ASSET: ocean-viewer-${{ steps.gate.outputs.version }}.tgz
+        run: |
+          set -euo pipefail
+          node scripts/changelog-section.js \
+            apps/ocean-viewer/CHANGELOG.md "$VERSION" > release-notes.md
+
+          prerelease=()
+          case "$VERSION" in *-*) prerelease=(--prerelease);; esac
+
+          # No --verify-tag: gh creates the tag at --target. Assets are attached at
+          # creation, so /releases/latest/download/ is never assetless.
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --notes-file release-notes.md \
+            --latest \
+            "${prerelease[@]}" \
+            "release-assets/$ASSET" \
+            release-assets/ocean-viewer.tgz

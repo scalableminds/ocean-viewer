@@ -7,5 +7,11 @@
 		"verbatimModuleSyntax": true,
 		"forceConsistentCasingInFileNames": true
 	},
-	"include": ["src", "vite-plugins", "vite.config.ts"]
+	"include": [
+		"src",
+		"tests",
+		"vite-plugins",
+		"vite.config.ts",
+		"playwright.config.ts"
+	]
 }

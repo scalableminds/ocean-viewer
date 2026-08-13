@@ -28,7 +28,6 @@ import type { Layer } from "./types";
  */
 const GRID_STEP = 1 / 12; // 0.083° grid step
 const N_LEVELS = 50; // elevation axis length (so, thetao)
-const TIME_INDEX = 12000; // daily index into the 12227-step time axis
 
 const ROOT = "https://s3.waw3-1.cloudferro.com";
 const DATASET = `${ROOT}/mdl-arco-time-025/arco/GLOBAL_MULTIYEAR_PHY_001_030/cmems_mod_glo_phy_my_0.083deg_P1D-m_202311/timeChunked.zarr`;

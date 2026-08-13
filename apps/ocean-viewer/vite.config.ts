@@ -1,5 +1,6 @@
 import { createRequire } from "node:module";
 import { defineConfig } from "vite";
+import { emitBuildMetadata } from "./vite-plugins/emit-build-metadata";
 import { stripWebpackMagicComments } from "./vite-plugins/strip-webpack-magic-comments";
 
 // Neuroglancer's worker bundles use `import.meta.url`-relative subpath
@@ -12,11 +13,18 @@ import { stripWebpackMagicComments } from "./vite-plugins/strip-webpack-magic-co
 // keeps resolution honoring the package's `exports` map.
 const require = createRequire(import.meta.url);
 
+// The release workflow builds after `changeset version`, so this is the version
+// being released.
+const { name, version } = require("./package.json") as {
+	name: string;
+	version: string;
+};
+
 export default defineConfig({
 	// Emit relative asset URLs ("assets/…" instead of "/assets/…") so the built
 	// app can be served from any sub-path without rebuilding.
 	base: "./",
-	plugins: [stripWebpackMagicComments()],
+	plugins: [stripWebpackMagicComments(), emitBuildMetadata({ name, version })],
 	worker: {
 		format: "es",
 		// Worker sub-builds don't inherit the plugins above.

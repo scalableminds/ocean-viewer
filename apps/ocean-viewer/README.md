@@ -1,99 +1,141 @@
 # Ocean Viewer
 
-A **Volumetric Viewer** for the MyOcean Data Portal, built on
-[Neuroglancer](https://github.com/google/neuroglancer) and embedded as an
-`<iframe>`. The portal drives the viewer and reads back state/clicks over
-`postMessage()`.
+A **volumetric viewer** for ocean model data — zarr / OME-Zarr — built on
+[Neuroglancer](https://github.com/google/neuroglancer). Embed it as an `<iframe>`
+and drive it over `postMessage`.
 
-## Setup
+You host it yourself. This package is **not published to any registry** — it ships
+as a tarball attached to each
+[GitHub release](https://github.com/scalableminds/ocean-viewer/releases). The bundle
+is static and self-contained: no runtime dependencies, no build step, no server code.
 
-```sh
+> While the repository is private, these release URLs are not publicly reachable —
+> GitHub returns 404 for release downloads on private repos, even with a token. They
+> start working when the repository becomes public.
+
+## Install
+
+Both paths use the same tarball.
+
+**With npm:**
+
+```bash
+npm i https://github.com/scalableminds/ocean-viewer/releases/download/v1.0.0/ocean-viewer-1.0.0.tgz
+```
+
+The assets land in `node_modules/@scalableminds/ocean-viewer/dist/`; copy or alias
+them into a static route. URL dependencies are exact pins — `^1.0.0` is not possible.
+
+**Without npm:**
+
+```bash
+curl -fsSL https://github.com/scalableminds/ocean-viewer/releases/latest/download/ocean-viewer.tgz \
+  | tar -xz --strip-components=1 -C /var/www/ocean-viewer
+```
+
+Use `ocean-viewer.tgz` for `latest` (the redirect only works for a fixed filename),
+or `ocean-viewer-<version>.tgz` to pin.
+
+**Verify a download:**
+
+```bash
+gh attestation verify ocean-viewer-1.0.0.tgz -R scalableminds/ocean-viewer
+```
+
+## Serve it
+
+Serve `dist/` as plain static files. Two things to get right:
+
+- **`Content-Type: application/wasm` for `.wasm`.** `WebAssembly.instantiateStreaming`
+  rejects any other MIME type, and the failure looks like a data bug rather than a
+  server one.
+- **No SPA catch-all rewrite.** The viewer has no router and reads `location.hash`
+  once at boot, so a catch-all would turn a real 404 on a hashed asset into a silent
+  200 serving `index.html`.
+
+Assets are referenced relatively, so any sub-path works with no rebuild. Every
+release is tested by loading the packed tarball from a nonsensical sub-path.
+
+The viewer runs WebAssembly and same-origin web workers (one of which spawns
+another), and fetches data from whatever origins your `CONFIG` points it at. If you
+serve a `Content-Security-Policy`, it needs to allow those; the specifics are yours
+to decide.
+
+## Embed it
+
+```html
+<iframe
+  src="/ocean-viewer/dist/index.html"
+  title="Ocean Viewer"
+  style="border: 0; background: #000; width: 100%; height: 600px"
+></iframe>
+```
+
+`background: #000` avoids the host page showing through before the viewer's
+stylesheet loads.
+
+```js
+const iframe = document.querySelector("iframe");
+const viewerOrigin = new URL(iframe.src, location.href).origin;
+
+window.addEventListener("message", (event) => {
+  if (event.source !== iframe.contentWindow) return;
+  if (event.origin !== viewerOrigin) return;
+  if (event.data?.namespace !== "ocean-viewer") return;
+
+  if (event.data.type === "READY") {
+    iframe.contentWindow.postMessage(
+      { namespace: "ocean-viewer", type: "CONFIG", state: myState, mode: "full" },
+      viewerOrigin,
+    );
+  }
+});
+```
+
+**Wait for `READY`, not `load`** — `load` fires before the viewer's bridge is
+listening, so a `CONFIG` sent then is dropped.
+
+The viewer only accepts messages from its immediate parent frame. Set
+`VITE_PARENT_ORIGIN` at build time to pin the origin it will talk to; otherwise it
+locks onto the first valid sender.
+
+See [`examples/thetao.config.json`](examples/thetao.config.json) for a complete
+`CONFIG`, and the [protocol reference](../../packages/protocol/README.md) for every
+message and field.
+
+## Browser support
+
+WebGL2 **and** the `EXT_color_buffer_float` extension are hard requirements — the
+viewer stays blank without either. Also ES2022, WebAssembly, and ES-module workers.
+
+## Which build is running?
+
+```bash
+curl https://example.org/ocean-viewer/dist/version.json
+# { "name": "...", "version": "1.0.0", "commit": "9f3c1d…", "builtAt": "…" }
+```
+
+## Upgrading
+
+Release URLs are exact pins, and **neither Dependabot nor Renovate tracks URL
+dependencies**, so there are no automated update PRs. Watch the repository's releases
+(*Watch → Custom → Releases*), read the changelog, and replace the tarball.
+
+Semver describes the **embed contract**: the postMessage protocol, the iframe URL
+format, and minimum browser support. An internal rewrite that leaves those intact is
+a patch, however large.
+
+There is no rollback — you self-host, so a deployed version stays until you replace
+it.
+
+## Working on the viewer
+
+```bash
 npm install
-npm run dev        # dev server at http://localhost:5174
-npm run build      # production build
-npm run preview    # serve the production build
-npm run typecheck
+npm run dev -w @scalableminds/ocean-viewer   # http://localhost:5174
 ```
 
-## Architecture
-
-A thin TypeScript wrapper around the `neuroglancer` npm package:
-
-| File | Role |
-|---|---|
-| [src/main.ts](src/main.ts) | Bootstrap: create viewer, seed `#!` hash, attach bridge |
-| [src/wrapper/viewer.ts](src/wrapper/viewer.ts) | Create the Neuroglancer viewer (no live URL binding) |
-| [src/wrapper/bridge.ts](src/wrapper/bridge.ts) | Origin-restricted `postMessage` in/out |
-| [src/wrapper/config.ts](src/wrapper/config.ts) | Apply CONFIG (full replace / partial merge) |
-| [src/wrapper/report.ts](src/wrapper/report.ts) | Throttled REPORT of viewer state |
-| [src/wrapper/pointer.ts](src/wrapper/pointer.ts) | CLICK / throttled HOVER with per-layer values |
-| [src/wrapper/image-layer.ts](src/wrapper/image-layer.ts) | Image layer reporting values in physical units |
-| [@ocean-viewer/protocol](../../packages/protocol/src/index.ts) | CONFIG / READY / REPORT / CLICK / HOVER message contract |
-| [@ocean-viewer/colormaps](../../packages/colormaps/src/index.ts) | Colour data behind each colormap id |
-| [@ocean-viewer/colormaps/shader](../../packages/colormaps/src/shader.ts) | Named colormap → GLSL shader resolver |
-| [src/chrome.css](src/chrome.css) | Hides Neuroglancer's remaining built-in UI chrome (CSS-only) |
-
-## Parent ↔ iframe protocol
-
-- **CONFIG** (inbound): a Neuroglancer state JSON. First message is a full state;
-  later messages are partial updates merged onto the current state, preserving
-  camera position/orientation unless explicitly included.
-- **READY** (outbound): sent once when the viewer is initialised and the bridge is
-  listening. The parent should wait for it before sending its first CONFIG.
-- **REPORT** (outbound): throttled serialised state after user interaction.
-- **CLICK** (outbound): the global-coordinate position clicked in a data panel,
-  plus the value each visible layer has there, in physical units. Drags
-  (pan/rotate) are not clicks.
-- **HOVER** (outbound): the same payload as CLICK as the pointer moves over the
-  data, throttled to one message per 100 ms (leading edge plus a trailing send)
-  and skipped when the readout is unchanged.
-
-Neither CLICK nor HOVER is emitted unless Neuroglancer has a valid picked
-position under the cursor, so the pointer has to move once after a CONFIG
-rebuilds the panels before the first one lands.
-
-Set the allowed parent origin at build time via `VITE_PARENT_ORIGIN`; otherwise
-the bridge locks onto the first valid sender.
-
-## Data sources
-
-Zarr (v2/v3, OME-Zarr) via the kvstore syntax `https://…/array/|zarr2:`, and
-`precomputed://` for cloud-hosted segmentation. Plain Zarr has no spatial
-metadata, so supply axis order/orientation via the layer `source.transform`
-(e.g. invert x and y — see the example).
-
-## Colormaps
-
-Image layers may carry an `oceanColormap` field (an Ocean Viewer extension) that
-the wrapper resolves into the layer `shader`:
-
-```json
-"oceanColormap": { "colormapId": "viridis", "valueMin": 10, "valueMax": 20,
-                   "logScale": true, "valueClamp": true }
-```
-
-`colormapId` is a colormap id or a raw GLSL shader string (passed through);
-`logScale` enables logarithmic rendering, `valueClamp` clamps to
-`[valueMin, valueMax]`, `colormapInvert` reverses the colormap, and missing
-voxels (`NaN`, the CMEMS fill value, or an explicit `noDataValue`) render
-transparent. See the [protocol README](../../packages/protocol/README.md#layers--oceancolormap)
-for the full field list.
-
-The spec's `scaleFactor`/`addOffset` (CF packing) and `noDataValue` say what a
-stored number *means*, so they are applied to value readouts as well as to the
-picture: [src/wrapper/image-layer.ts](src/wrapper/image-layer.ts) registers an
-`ImageUserLayer` subclass whose `transformPickedValue` converts every picked
-value to physical units. Without it a packed int16 layer renders correctly but
-the layer bar, the selection panel and CLICK/HOVER all report raw integers.
-Neuroglancer's invlerp / shader-control ranges and the histogram are computed
-from the texture data and remain in raw units.
-
-The 26 colormap ids and their colour data live in
-[@ocean-viewer/colormaps](../../packages/colormaps/); this app compiles the one a
-layer names into a GLSL `cmap()` function, since Neuroglancer itself only ships
-`colormapJet`/`colormapCubehelix`.
-
-See [examples/thetao.config.json](examples/thetao.config.json) for a complete,
-working CONFIG payload. For an interactive parent mock — a layer panel with
-visibility / opacity / colour map / min-max controls that drives the iframe —
-see [my-ocean-mock/](../my-ocean-mock/README.md).
+Architecture and the rules for not breaking worker bundling are in
+[AGENTS.md](AGENTS.md); releases and changesets in
+[CONTRIBUTING.md](../../CONTRIBUTING.md). For an interactive parent page to develop
+against, see [my-ocean-mock](../my-ocean-mock/README.md).
