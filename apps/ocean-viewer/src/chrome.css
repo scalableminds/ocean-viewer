@@ -43,13 +43,18 @@
 	display: none !important;
 }
 
-/* Camera buttons overlaid on the 3D panel (injected by
-   wrapper/viewport-controls.ts). The panel is already `position: relative`, and
-   the controls Neuroglancer normally puts in this corner are hidden above. */
+/* Per-panel button clusters — camera on the 3D panel, rotation on the XY one
+   (injected by wrapper/viewport-controls.ts). The panel is already
+   `position: relative`, and the controls Neuroglancer normally puts in this
+   corner are hidden above.
+
+   The right offset clears the navigation-help badge below: in layouts that put
+   a panel in the viewer's own top-right corner (`4panel`, or a single panel)
+   the two would otherwise stack. */
 .ocean-viewport-controls {
 	position: absolute;
 	top: 4px;
-	right: 4px;
+	right: 26px;
 	z-index: 1;
 	display: flex;
 	gap: 2px;
@@ -76,6 +81,30 @@
 .ocean-viewport-controls button:hover {
 	background: rgb(255 255 255 / 15%);
 	color: #fff;
+}
+
+/* Symbol buttons (⌂ ↺ ↻). These glyphs are drawn small for their em size, so at
+   the 11px of the XY / XZ / YZ labels they read as specks. The selector repeats
+   the cluster and the element to outweigh the `button` rule above. */
+.ocean-viewport-controls button.ocean-viewport-controls-glyph {
+	font-size: 17px;
+	line-height: 1;
+}
+
+/* `inline-block` so the transforms below apply at all. */
+.ocean-viewport-controls-glyph > span {
+	display: inline-block;
+}
+
+/* Tilt each circle arrow towards the way it turns: the glyphs are near-closed
+   rings whose direction is otherwise hard to read at a glance. The span keeps
+   the tilt off the button box, so the hover background stays square. */
+.ocean-viewport-controls-rotation button:first-child > span {
+	transform: rotate(-30deg);
+}
+
+.ocean-viewport-controls-rotation button:last-child > span {
+	transform: rotate(30deg);
 }
 
 /* Navigation cheat sheet in the viewer's top-right corner (injected by
