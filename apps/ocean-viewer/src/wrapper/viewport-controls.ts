@@ -28,6 +28,12 @@ import type { Viewer } from "neuroglancer/unstable/viewer.js";
 
 const CONTROLS_CLASS = "ocean-viewport-controls";
 
+/** Marks the XY panel's cluster, whose two arrows CSS tilts in opposite ways. */
+const ROTATION_CLASS = `${CONTROLS_CLASS}-rotation`;
+
+/** Marks a button labelled with a symbol instead of a word. */
+const GLYPH_CLASS = `${CONTROLS_CLASS}-glyph`;
+
 /** Turn per press of ↺ / ↻, small enough to nudge a map into alignment. */
 const ROTATION_STEP_DEGREES = 15;
 
@@ -143,9 +149,10 @@ export class ViewportControls {
 	}
 
 	/** A cluster shell: positioned by CSS, and inert as far as the panel knows. */
-	private cluster(): HTMLElement {
+	private cluster(modifier?: string): HTMLElement {
 		const root = document.createElement("div");
-		root.className = CONTROLS_CLASS;
+		root.className =
+			modifier === undefined ? CONTROLS_CLASS : `${CONTROLS_CLASS} ${modifier}`;
 		root.setAttribute(OVERLAY_ATTRIBUTE, "");
 
 		// The panel binds mousedown/wheel to camera drag/zoom on this same element;
@@ -165,7 +172,9 @@ export class ViewportControls {
 	 * orientation and stays put.
 	 */
 	private buildRotationControls(panel: RenderedDataPanel): HTMLElement {
-		const root = this.cluster();
+		// The modifier is what CSS tilts the two arrows by, each towards the way it
+		// turns.
+		const root = this.cluster(ROTATION_CLASS);
 		const rotate = (sign: number) => () => {
 			panel.navigationState.pose.rotateRelative(
 				kAxes[2],
@@ -177,6 +186,7 @@ export class ViewportControls {
 				"↺",
 				`Rotate the data ${ROTATION_STEP_DEGREES}° counter-clockwise`,
 				rotate(1),
+				true,
 			),
 		);
 		root.appendChild(
@@ -184,6 +194,7 @@ export class ViewportControls {
 				"↻",
 				`Rotate the data ${ROTATION_STEP_DEGREES}° clockwise`,
 				rotate(-1),
+				true,
 			),
 		);
 		return root;
@@ -193,12 +204,17 @@ export class ViewportControls {
 		const root = this.cluster();
 
 		root.appendChild(
-			this.button("⌂", "Reset the 3D camera (orientation and zoom)", () => {
-				const { pose, zoomFactor } = this.viewer.perspectiveNavigationState;
-				pose.orientation.reset();
-				// Sets the value to NaN, so the next read recomputes the default zoom.
-				zoomFactor.reset();
-			}),
+			this.button(
+				"⌂",
+				"Reset the 3D camera (orientation and zoom)",
+				() => {
+					const { pose, zoomFactor } = this.viewer.perspectiveNavigationState;
+					pose.orientation.reset();
+					// Sets the value to NaN, so the next read recomputes the default zoom.
+					zoomFactor.reset();
+				},
+				true,
+			),
 		);
 
 		for (const { label, title, target } of AXIS_VIEWS) {
@@ -216,16 +232,29 @@ export class ViewportControls {
 		return root;
 	}
 
+	/**
+	 * A `glyph` button carries a symbol rather than a word, which needs a larger
+	 * font size to read at all. Its label goes in a span of its own, so that a
+	 * tilted symbol doesn't tilt the button's hover background with it.
+	 */
 	private button(
 		label: string,
 		title: string,
 		onClick: () => void,
+		glyph = false,
 	): HTMLButtonElement {
 		const button = document.createElement("button");
 		button.type = "button";
-		button.textContent = label;
 		button.title = title;
 		button.addEventListener("click", onClick);
+		if (glyph) {
+			button.classList.add(GLYPH_CLASS);
+			const symbol = document.createElement("span");
+			symbol.textContent = label;
+			button.appendChild(symbol);
+		} else {
+			button.textContent = label;
+		}
 		return button;
 	}
 }

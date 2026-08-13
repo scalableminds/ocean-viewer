@@ -83,6 +83,30 @@
 	color: #fff;
 }
 
+/* Symbol buttons (⌂ ↺ ↻). These glyphs are drawn small for their em size, so at
+   the 11px of the XY / XZ / YZ labels they read as specks. The selector repeats
+   the cluster and the element to outweigh the `button` rule above. */
+.ocean-viewport-controls button.ocean-viewport-controls-glyph {
+	font-size: 17px;
+	line-height: 1;
+}
+
+/* `inline-block` so the transforms below apply at all. */
+.ocean-viewport-controls-glyph > span {
+	display: inline-block;
+}
+
+/* Tilt each circle arrow towards the way it turns: the glyphs are near-closed
+   rings whose direction is otherwise hard to read at a glance. The span keeps
+   the tilt off the button box, so the hover background stays square. */
+.ocean-viewport-controls-rotation button:first-child > span {
+	transform: rotate(-30deg);
+}
+
+.ocean-viewport-controls-rotation button:last-child > span {
+	transform: rotate(30deg);
+}
+
 /* Navigation cheat sheet in the viewer's top-right corner (injected by
    wrapper/navigation-help.ts). Sits on the container, above the Neuroglancer
    root, so it stays put across layout changes. */
