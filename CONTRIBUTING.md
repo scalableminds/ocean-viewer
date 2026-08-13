@@ -94,17 +94,3 @@ PR on someone's behalf.**
 The release step is guarded on the tag already existing, so re-running it on the same
 commit does nothing. `npm publish` is impossible by construction — the package is
 `"private": true`.
-
-
-### One-time setup, if this is re-bootstrapped
-
-- Push a `v0.1.0` tag at the pre-automation commit, so the release guard can't
-  retroactively "release" it.
-- Ensure the PR introducing the release workflow carries a changeset, so the first
-  push to `main` opens a release PR rather than releasing.
-- Create the `no-changeset` label.
-- Enable *Allow GitHub Actions to create and approve pull requests* at the
-  organisation level as well as the repository level.
-
-For local changelog previews, `@changesets/changelog-github` needs a token:
-`echo 'GITHUB_TOKEN=<token>' >> .env` (gitignored).

@@ -108,25 +108,6 @@ message and field.
 WebGL2 **and** the `EXT_color_buffer_float` extension are hard requirements — the
 viewer stays blank without either. Also ES2022, WebAssembly, and ES-module workers.
 
-## Which build is running?
-
-```bash
-curl https://example.org/ocean-viewer/dist/version.json
-# { "name": "...", "version": "1.0.0", "commit": "9f3c1d…", "builtAt": "…" }
-```
-
-## Upgrading
-
-Release URLs are exact pins, and **neither Dependabot nor Renovate tracks URL
-dependencies**, so there are no automated update PRs. Watch the repository's releases
-(*Watch → Custom → Releases*), read the changelog, and replace the tarball.
-
-Semver describes the **embed contract**: the postMessage protocol, the iframe URL
-format, and minimum browser support. An internal rewrite that leaves those intact is
-a patch, however large.
-
-There is no rollback — you self-host, so a deployed version stays until you replace
-it.
 
 ## Working on the viewer
 
