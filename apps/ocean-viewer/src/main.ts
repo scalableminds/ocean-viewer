@@ -40,7 +40,14 @@ function bootstrap(): void {
 	registerOceanImageLayer();
 
 	const viewer = createViewer(target);
-	new ViewportControls(viewer);
+
+	// ConfigApplier captures the pristine default state in its constructor, so
+	// create it before any state is applied.
+	const configApplier = new ConfigApplier(viewer);
+
+	// ⌂ restores the zoom the latest CONFIG asked for, falling back to
+	// Neuroglancer's fit-the-data default when none named one.
+	new ViewportControls(viewer, () => configApplier.projectionScale);
 	new NavigationHelp(target);
 	// Expose for debugging / automation.
 	(window as unknown as { viewer: unknown; oceanViewer: unknown }).viewer =
@@ -48,10 +55,6 @@ function bootstrap(): void {
 	(window as unknown as { oceanViewer: unknown }).oceanViewer = {
 		resolveShader,
 	};
-
-	// ConfigApplier captures the pristine default state in its constructor, so
-	// create it before any state is applied.
-	const configApplier = new ConfigApplier(viewer);
 
 	// One-off seed from the `#!{JSON}` URL hash, applied as an initial full state.
 	const hashState = parseHashState(location.hash);

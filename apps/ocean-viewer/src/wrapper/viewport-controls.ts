@@ -6,7 +6,8 @@
  *
  * On the 3D panel, for recovering a camera tumbled by an undoable left-drag:
  *
- *   ⌂   reset — identity orientation plus a zoom recomputed to fit the data
+ *   ⌂   reset — identity orientation plus the zoom the CONFIG asked for, or,
+ *       when it named none, one recomputed to fit the data
  *   XY  ·  XZ  ·  YZ — align the camera with that principal plane
  *
  * Only the orientation (and, for ⌂, the zoom) is touched — the perspective
@@ -82,7 +83,14 @@ export class ViewportControls {
 	 * fire while the page is hidden, so a backgrounded iframe would never get
 	 * its buttons.
 	 */
-	constructor(private readonly viewer: Viewer) {
+	constructor(
+		private readonly viewer: Viewer,
+		/**
+		 * The 3D zoom ⌂ restores to, read at press time — a later CONFIG can change
+		 * it, and the value is only meaningful once one has been applied.
+		 */
+		private readonly configuredZoom: () => number | undefined = () => undefined,
+	) {
 		this.observer = new MutationObserver(this.apply);
 		this.observer.observe(viewer.element, { childList: true, subtree: true });
 		this.apply();
@@ -210,8 +218,13 @@ export class ViewportControls {
 				() => {
 					const { pose, zoomFactor } = this.viewer.perspectiveNavigationState;
 					pose.orientation.reset();
-					// Sets the value to NaN, so the next read recomputes the default zoom.
-					zoomFactor.reset();
+					const configured = this.configuredZoom();
+					if (configured === undefined) {
+						// Sets the value to NaN, so the next read recomputes the default zoom.
+						zoomFactor.reset();
+					} else {
+						zoomFactor.value = configured;
+					}
 				},
 				true,
 			),

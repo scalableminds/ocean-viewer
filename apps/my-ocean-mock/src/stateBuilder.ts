@@ -2,7 +2,7 @@ import type {
 	NeuroglancerLayerJson,
 	ViewerStateJson,
 } from "@ocean-viewer/protocol";
-import { N_LEVELS, N_TIMES } from "./layers";
+import { N_TIMES } from "./layers";
 import type { Layer } from "./types";
 
 /** Translate one UI layer into a Neuroglancer image layer + `oceanColormap`. */
@@ -96,9 +96,9 @@ export function buildFullState(layers: Layer[]): ViewerStateJson {
 		dimensions: DIMENSIONS,
 		// `elevation` counts up from the sea floor (see the transform in
 		// `layers.ts`), so the surface sits at the top of the axis.
-		position: [0, 0, N_LEVELS - 1, N_TIMES - 1],
+		position: [0, 0, 0, N_TIMES - 1],
 		crossSectionScale: 0.9,
-		projectionScale: 2048,
+		projectionScale: 250,
 		layout: "4panel-alt",
 		layers: layersToState(layers),
 	};

@@ -10,6 +10,9 @@
  *               pristine default (clears stale layers etc.).
  *   - partial : merge `state` onto the current state, preserving camera
  *               position/orientation/zoom unless the partial names them.
+ *
+ * Also remembers the 3D zoom the latest config asked for, which the ⌂ button in
+ * `viewport-controls.ts` restores to in place of Neuroglancer's own default.
  */
 
 import { resolveStateColormaps } from "@ocean-viewer/colormaps/shader";
@@ -32,6 +35,17 @@ export class ConfigApplier {
 	private readonly pristine: ViewerStateJson;
 	private hasReceivedFull = false;
 
+	/**
+	 * The 3D zoom the most recent CONFIG asked for, if any — what the ⌂ button
+	 * restores to instead of Neuroglancer's fit-the-data default. A full config
+	 * that omits it falls back to the pristine default, so it clears this too.
+	 */
+	private configuredProjectionScale: number | undefined;
+
+	get projectionScale(): number | undefined {
+		return this.configuredProjectionScale;
+	}
+
 	constructor(private readonly viewer: Viewer) {
 		this.pristine = viewer.state.toJSON() as ViewerStateJson;
 	}
@@ -50,8 +64,12 @@ export class ConfigApplier {
 			if (mode === "full") {
 				this.viewer.state.restoreState({ ...this.pristine, ...state });
 				this.hasReceivedFull = true;
+				this.configuredProjectionScale = state.projectionScale;
 			} else {
 				this.applyPartial(state);
+				if (state.projectionScale !== undefined) {
+					this.configuredProjectionScale = state.projectionScale;
+				}
 			}
 		} catch (err) {
 			// eslint-disable-next-line no-console
