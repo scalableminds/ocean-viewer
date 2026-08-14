@@ -17,7 +17,11 @@ jobs:
   changeset:
     name: Changeset required
     # `${{ }}` is required: a bare YAML scalar cannot start with `!`.
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changeset') }}
+    # The release PR is skipped: it *consumes* the changesets, so `changeset
+    # status` would always report a versionable change with none pending.
+    if: >-
+      ${{ !contains(github.event.pull_request.labels.*.name, 'no-changeset')
+          && github.head_ref != 'changeset-release/main' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
