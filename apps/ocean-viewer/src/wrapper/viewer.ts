@@ -48,6 +48,7 @@ export function createViewer(target: HTMLElement): Viewer {
 	// across CONFIGs unless explicitly overridden.
 	const current = viewer.state.toJSON() as ViewerStateJson;
 	viewer.state.restoreState({
+		hideCrossSectionBackground3D: true,
 		crossSectionBackgroundColor: "#000000",
 		projectionBackgroundColor: "#000000",
 		showScaleBar: false,
