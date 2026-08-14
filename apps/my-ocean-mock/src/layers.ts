@@ -27,7 +27,8 @@ import type { Layer } from "./types";
  * below sea floor) is checked BEFORE unpacking.
  */
 const GRID_STEP = 1 / 12; // 0.083° grid step
-const N_LEVELS = 50; // elevation axis length (so, thetao)
+export const N_LEVELS = 50; // elevation axis length (so, thetao)
+export const N_TIMES = 12227; // daily time axis length (hours since 1950-01-01)
 
 const ROOT = "https://s3.waw3-1.cloudferro.com";
 const DATASET = `${ROOT}/mdl-arco-time-025/arco/GLOBAL_MULTIYEAR_PHY_001_030/cmems_mod_glo_phy_my_0.083deg_P1D-m_202311/timeChunked.zarr`;
