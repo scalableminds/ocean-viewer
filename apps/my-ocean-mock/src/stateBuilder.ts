@@ -91,9 +91,19 @@ const DIMENSIONS: Record<string, [number, string]> = {
  * silently discards a position whose length doesn't match the coordinate
  * space's rank and opens at the centre of the data bounds instead.
  */
-export function buildFullState(layers: Layer[]): ViewerStateJson {
+export function buildFullState(
+	layers: Layer[],
+	verticalExaggeration = 1,
+	zoomDamping = 0,
+): ViewerStateJson {
 	return {
 		dimensions: DIMENSIONS,
+		// Unlike the scales in `DIMENSIONS` this one is not inert. x spans 360° and
+		// y 160° against elevation's ~50 levels, so a factor of a few makes the
+		// sections frame the water column at the zoom that frames the map.
+		relativeDisplayScales: { elevation: verticalExaggeration },
+		// How much of the shared zoom the elevation axis ignores: 0 none, 1 all.
+		oceanZoomDamping: { elevation: zoomDamping },
 		// `elevation` counts up from the sea floor (see the transform in
 		// `layers.ts`), so the surface sits at the top of the axis.
 		position: [0, 0, 0, N_TIMES - 1],
