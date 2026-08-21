@@ -150,7 +150,18 @@ export interface DataPanelLayoutJson {
  */
 export interface ViewerStateJson {
 	dimensions?: Record<string, [scale: number, unit: string]>;
-	relativeDisplayScales?: number[];
+	/**
+	 * Per-dimension display stretch, keyed by name, multiplying that dimension's
+	 * scale for display only (vertical exaggeration).
+	 */
+	relativeDisplayScales?: Record<string, number>;
+	/**
+	 * Ocean Viewer extension, not a Neuroglancer key. Per-dimension exponent in
+	 * `[0, 1]` making that dimension's {@link relativeDisplayScales} factor track
+	 * the shared cross-section zoom: 0 zooms with the map (stock Neuroglancer), 1
+	 * holds the axis still on screen while the map zooms.
+	 */
+	oceanZoomDamping?: Record<string, number>;
 	displayDimensions?: string[];
 	position?: number[];
 	crossSectionOrientation?: [number, number, number, number];

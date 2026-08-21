@@ -18,6 +18,7 @@
 import { resolveStateColormaps } from "@ocean-viewer/colormaps/shader";
 import type { ConfigMessage, ViewerStateJson } from "@ocean-viewer/protocol";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
+import { DisplayScales } from "./display-scales.js";
 import { withOrthographicDefault } from "./viewer.js";
 
 const PRESERVED_CAMERA_KEYS: ReadonlyArray<keyof ViewerStateJson> = [
@@ -42,12 +43,16 @@ export class ConfigApplier {
 	 */
 	private configuredProjectionScale: number | undefined;
 
+	/** Vertical exaggeration and its zoom damping; see `display-scales.ts`. */
+	private readonly displayScales: DisplayScales;
+
 	get projectionScale(): number | undefined {
 		return this.configuredProjectionScale;
 	}
 
 	constructor(private readonly viewer: Viewer) {
 		this.pristine = viewer.state.toJSON() as ViewerStateJson;
+		this.displayScales = new DisplayScales(viewer);
 	}
 
 	apply(message: ConfigMessage): void {
@@ -56,10 +61,12 @@ export class ConfigApplier {
 		const resolved = resolveStateColormaps(message.state);
 		// A restored layout resets Neuroglancer's `orthographicProjection` flag, so
 		// re-assert our default whenever a CONFIG names a layout.
-		const state: ViewerStateJson =
+		const withLayout: ViewerStateJson =
 			resolved.layout === undefined
 				? resolved
 				: { ...resolved, layout: withOrthographicDefault(resolved.layout) };
+		// `oceanZoomDamping` is ours; it never reaches `restoreState`.
+		const { oceanZoomDamping, ...state } = withLayout;
 		try {
 			if (mode === "full") {
 				this.viewer.state.restoreState({ ...this.pristine, ...state });
@@ -70,6 +77,20 @@ export class ConfigApplier {
 				if (state.projectionScale !== undefined) {
 					this.configuredProjectionScale = state.projectionScale;
 				}
+			}
+			// A `restoreState` clears `relativeDisplayScales` unless this state
+			// named it, so re-assert it from here on.
+			if (mode === "full") {
+				this.displayScales.set(state.relativeDisplayScales, oceanZoomDamping);
+			} else {
+				this.displayScales.patch({
+					...(state.relativeDisplayScales !== undefined
+						? { base: state.relativeDisplayScales }
+						: {}),
+					...(oceanZoomDamping !== undefined
+						? { damping: oceanZoomDamping }
+						: {}),
+				});
 			}
 		} catch (err) {
 			// eslint-disable-next-line no-console
