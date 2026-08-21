@@ -2,7 +2,7 @@
 "@scalableminds/ocean-viewer": minor
 ---
 
-**Added (experimental):** `oceanZoomDamping`, a per-dimension exponent in `[0, 1]`
+**Added:** `oceanZoomDamping`, a per-dimension exponent in `[0, 1]`
 that makes a dimension's `relativeDisplayScales` factor track the shared
 cross-section zoom — `0` zooms with the map (unchanged behaviour), `1` holds the
 axis still on screen. Intended for the elevation axis, whose range is tiny next to
