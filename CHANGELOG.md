@@ -5,6 +5,19 @@
 
 # @scalableminds/ocean-viewer
 
+## 1.2.0
+
+### Minor Changes
+
+- [#4](https://github.com/scalableminds/ocean-viewer/pull/4) [`0340046`](https://github.com/scalableminds/ocean-viewer/commit/03400460c0ca6d46a51a86ad6720dbe3821d245f) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Added:** `oceanZoomDamping`, a per-dimension exponent in `[0, 1]`
+  that makes a dimension's `relativeDisplayScales` factor track the shared
+  cross-section zoom — `0` zooms with the map (unchanged behaviour), `1` holds the
+  axis still on screen. Intended for the elevation axis, whose range is tiny next to
+  lon/lat, so zooming the map no longer lurches the XZ/YZ sections.
+  
+  `relativeDisplayScales` itself is now re-asserted by dimension name after
+  Neuroglancer re-derives the coordinate space, which previously dropped it.
+
 ## 1.1.0
 
 ### Minor Changes
