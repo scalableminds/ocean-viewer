@@ -60,6 +60,8 @@ export function App() {
 	const [layers, setLayers] = useState<Layer[]>(INITIAL_LAYERS);
 	const [expandedId, setExpandedId] = useState<string | null>(null);
 	const [click, setClick] = useState<ClickMessage | null>(null);
+	const [exaggeration, setExaggeration] = useState(4);
+	const [damping, setDamping] = useState(1);
 	const [hover, setHover] = useState<HoverMessage | null>(null);
 	const viewerRef = useRef<OceanViewerHandle>(null);
 
@@ -118,6 +120,35 @@ export function App() {
 					</div>
 				)}
 
+				<div className="dev-tools display-scales">
+					<label htmlFor="vert-exag">
+						Vertical exaggeration
+						<span className="setting-value">{exaggeration}×</span>
+					</label>
+					<input
+						id="vert-exag"
+						type="range"
+						min={1}
+						max={20}
+						step={0.5}
+						value={exaggeration}
+						onChange={(e) => setExaggeration(Number(e.target.value))}
+					/>
+					<label htmlFor="zoom-damping">
+						Elevation zoom damping
+						<span className="setting-value">{damping.toFixed(2)}</span>
+					</label>
+					<input
+						id="zoom-damping"
+						type="range"
+						min={0}
+						max={1}
+						step={0.05}
+						value={damping}
+						onChange={(e) => setDamping(Number(e.target.value))}
+					/>
+				</div>
+
 				<div className="dev-tools">
 					<button type="button" onClick={openInNeuroglancer}>
 						Open in Neuroglancer ↗
@@ -132,6 +163,8 @@ export function App() {
 				<OceanViewerFrame
 					ref={viewerRef}
 					layers={layers}
+					verticalExaggeration={exaggeration}
+					zoomDamping={damping}
 					onClick={setClick}
 					onHover={setHover}
 				/>

@@ -5,7 +5,8 @@
  *
  * The state has to be de-Ocean-ified first: each layer's `oceanColormap` is
  * compiled into the layer `shader`, then stripped — a stock instance has no use
- * for it once the shader exists.
+ * for it once the shader exists. `oceanZoomDamping` is dropped too — stock
+ * Neuroglancer has no damping, only the static `relativeDisplayScales`.
  */
 
 import {
@@ -21,8 +22,9 @@ const NEUROGLANCER_URL =
 
 /** `#!`-encoded Neuroglancer URL for `state`. */
 export function toNeuroglancerUrl(state: ViewerStateJson): string {
+	const { oceanZoomDamping: _dropped, ...plain } = state;
 	const json = JSON.stringify(
-		stripOceanColormaps(resolveStateColormaps(state)),
+		stripOceanColormaps(resolveStateColormaps(plain)),
 	);
 	return `${NEUROGLANCER_URL}#!${encodeURIComponent(json)}`;
 }

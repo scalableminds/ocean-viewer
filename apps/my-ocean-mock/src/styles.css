@@ -352,3 +352,17 @@ body {
 	height: 100%;
 	display: block;
 }
+
+/* ---- Display-scale controls ---- */
+.display-scales {
+	flex-direction: column;
+	gap: 4px;
+	align-items: stretch;
+}
+
+.display-scales label {
+	display: flex;
+	justify-content: space-between;
+	font-size: 12px;
+	color: var(--text);
+}

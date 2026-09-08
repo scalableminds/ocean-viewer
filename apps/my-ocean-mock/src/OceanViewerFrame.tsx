@@ -42,6 +42,10 @@ export interface OceanViewerHandle {
 
 interface Props {
 	layers: Layer[];
+	/** Vertical exaggeration of the `elevation` axis. */
+	verticalExaggeration?: number;
+	/** How much of the shared zoom the `elevation` axis ignores, in `[0, 1]`. */
+	zoomDamping?: number;
 	/** Called with each CLICK the viewer reports (position + per-layer values). */
 	onClick?: (click: ClickMessage) => void;
 	/** Called with each (throttled) HOVER the viewer reports. */
@@ -59,7 +63,10 @@ interface Props {
  * cached and grafted onto each full state sent.
  */
 export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
-	function OceanViewerFrame({ layers, onClick, onHover }, ref) {
+	function OceanViewerFrame(
+		{ layers, verticalExaggeration = 1, zoomDamping = 0, onClick, onHover },
+		ref,
+	) {
 		const iframeRef = useRef<HTMLIFrameElement>(null);
 		const readyRef = useRef(false);
 		// Latest camera reported by the viewer after user interaction (pan/zoom).
@@ -77,16 +84,23 @@ export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
 		}, []);
 
 		// Full state for the current layers, with the user's last camera grafted on.
-		const composeState = useCallback((layerList: Layer[]): ViewerStateJson => {
-			const state = buildFullState(layerList) as Record<string, unknown>;
-			const camera = cameraRef.current as Record<string, unknown> | null;
-			if (camera) {
-				for (const key of CAMERA_KEYS) {
-					if (key in camera) state[key] = camera[key];
+		const composeState = useCallback(
+			(layerList: Layer[]): ViewerStateJson => {
+				const state = buildFullState(
+					layerList,
+					verticalExaggeration,
+					zoomDamping,
+				) as Record<string, unknown>;
+				const camera = cameraRef.current as Record<string, unknown> | null;
+				if (camera) {
+					for (const key of CAMERA_KEYS) {
+						if (key in camera) state[key] = camera[key];
+					}
 				}
-			}
-			return state as ViewerStateJson;
-		}, []);
+				return state as ViewerStateJson;
+			},
+			[verticalExaggeration, zoomDamping],
+		);
 
 		// Let the parent read that same state (for the debug buttons) without
 		// duplicating the camera bookkeeping.
@@ -105,7 +119,8 @@ export const OceanViewerFrame = forwardRef<OceanViewerHandle, Props>(
 			cameraRef.current = null;
 		};
 
-		// Re-send a full state whenever the layers change.
+		// Re-send on layer / exaggeration / damping changes (the latter two arrive
+		// through `composeState`).
 		useEffect(() => {
 			if (!readyRef.current) return;
 			post({ type: "CONFIG", state: composeState(layers), mode: "full" });
