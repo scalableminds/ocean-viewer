@@ -24,6 +24,14 @@ const LABEL_CLASS = "ocean-viewport-label";
 const SEPARATOR = " · ";
 
 /**
+ * Colour per display axis, keyed by the axis a plane cuts along — its normal.
+ * Follows the x / y / z → red / green / blue convention Neuroglancer's own axis
+ * lines use. Shared with `section-outlines.ts`, which draws each section's
+ * outline in the 3D panel in the same colour as this caption.
+ */
+export const PLANE_COLORS = ["#e2544c", "#5cb85c", "#5a8dee"] as const;
+
+/**
  * Stand-in for a display axis whose dimension the viewer can't name — fewer
  * than three display dimensions, or a coordinate space not resolved yet. Reads
  * as the plane names the align buttons use (`X` + `Y` → the XY section).
@@ -89,11 +97,24 @@ export class ViewportLabels {
 				entry = {
 					element,
 					navigationState,
-					dispose: () => orientation.changed.remove(this.apply),
+					dispose: () => {
+						orientation.changed.remove(this.apply);
+						panel.element.style.removeProperty("--ocean-plane-color");
+					},
 				};
 				this.entries.set(panel, entry);
 			}
-			const text = this.captionFor(entry.navigationState);
+			const axes = this.viewportAxes(entry.navigationState);
+			// The third display axis is the one this section cuts along; CSS reads the
+			// property to tint the caption.
+			const normal = 3 - axes[0] - axes[1];
+			panel.element.style.setProperty(
+				"--ocean-plane-color",
+				PLANE_COLORS[normal],
+			);
+			const text = axes
+				.map((axis) => this.displayDimensionName(axis))
+				.join(SEPARATOR);
 			// Writing unconditionally would feed this observer its own mutation for
 			// ever; comparing first lets it settle after one pass.
 			if (entry.element.textContent !== text) {
@@ -122,30 +143,29 @@ export class ViewportLabels {
 	}
 
 	/**
-	 * Name the dimensions running across and up the panel, in that order.
+	 * The display axes running across and up the panel, in that order.
 	 *
 	 * Read off the panel's own pose rather than from the axes the layout derived
 	 * it with: that mapping is relative to a base pose an unlinked layer group
 	 * keeps to itself, and it says nothing about a section the user has since
 	 * turned within its plane with ↻.
 	 */
-	private captionFor(navigationState: NavigationState): string {
+	private viewportAxes(navigationState: NavigationState): [number, number] {
 		const { orientation } = navigationState.pose.orientation;
-		return [kAxes[0], kAxes[1]]
-			.map((viewportAxis) => {
-				// The pose orientation maps viewport axes onto the displayed ones.
-				const displayed = vec3.transformQuat(
-					vec3.create(),
-					viewportAxis,
-					orientation,
-				);
-				let axis = 0;
-				for (let i = 1; i < 3; ++i) {
-					if (Math.abs(displayed[i]) > Math.abs(displayed[axis])) axis = i;
-				}
-				return this.displayDimensionName(axis);
-			})
-			.join(SEPARATOR);
+		const axisOf = (viewportAxis: vec3) => {
+			// The pose orientation maps viewport axes onto the displayed ones.
+			const displayed = vec3.transformQuat(
+				vec3.create(),
+				viewportAxis,
+				orientation,
+			);
+			let axis = 0;
+			for (let i = 1; i < 3; ++i) {
+				if (Math.abs(displayed[i]) > Math.abs(displayed[axis])) axis = i;
+			}
+			return axis;
+		};
+		return [axisOf(kAxes[0]), axisOf(kAxes[1])];
 	}
 
 	/** The dataset's name for a display axis, falling back to our letter for it. */
