@@ -52,6 +52,8 @@ export function createViewer(target: HTMLElement): Viewer {
 		crossSectionBackgroundColor: "#000000",
 		projectionBackgroundColor: "#000000",
 		showScaleBar: false,
+		// The yellow outline Neuroglancer draws around the dataset bounds
+		showDefaultAnnotations: false,
 		layout: withOrthographicDefault(current.layout),
 	});
 
