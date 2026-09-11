@@ -1,7 +1,7 @@
 /**
  * Outlines each cross-section where it sits in the 3D panel, in the colour of
- * the axis it cuts along — the same colour `viewport-labels.ts` tints that
- * section's caption with.
+ * one of the axes it carries — the same colour `viewport-labels.ts` tints that
+ * section's caption with, and one of the three the crosshair already uses.
  *
  * Neuroglancer draws the sections in 3D as textured quads, and with
  * `hideCrossSectionBackground3D` on, everything but the data itself is
@@ -27,7 +27,7 @@ import type { ProjectionParameters } from "neuroglancer/unstable/projection_para
 import type { WatchableValueInterface } from "neuroglancer/unstable/trackable_value.js";
 import { vec3, vec4 } from "neuroglancer/unstable/util/geom.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
-import { PLANE_COLORS } from "./viewport-labels.js";
+import { sectionColor } from "./viewport-labels.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -169,7 +169,7 @@ export class SectionOutlines {
 			);
 			rectangles.push({
 				points: rectangle.points,
-				color: PLANE_COLORS[this.normalAxisOf(section)],
+				color: sectionColor(this.normalAxisOf(section)),
 				// The camera looks down its own -z, so distance in front of it is -z.
 				depth: -inView[2],
 			});

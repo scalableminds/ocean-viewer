@@ -24,12 +24,29 @@ const LABEL_CLASS = "ocean-viewport-label";
 const SEPARATOR = " · ";
 
 /**
- * Colour per display axis, keyed by the axis a plane cuts along — its normal.
- * Follows the x / y / z → red / green / blue convention Neuroglancer's own axis
- * lines use. Shared with `section-outlines.ts`, which draws each section's
- * outline in the 3D panel in the same colour as this caption.
+ * Colour per display axis, following the x / y / z → red / green / blue
+ * convention of Neuroglancer's own axis lines, so a section's colour is one the
+ * user can already read off the crosshair.
  */
-export const PLANE_COLORS = ["#e2544c", "#5cb85c", "#5a8dee"] as const;
+const AXIS_COLORS = ["#e2544c", "#5cb85c", "#5a8dee"] as const;
+
+/**
+ * The colour of a section, from the axis it *carries* rather than the one it
+ * cuts along — given here by the axis whose normal is its own plus one.
+ *
+ * That cycle is forced: with three sections and three axes, the only way for
+ * every section to take a colour of an axis lying in it and for no two to share
+ * one is a three-cycle, and of the two the other would hand each section the
+ * axis running across its panel. This one gives two of the three the axis
+ * running *up* their panel — elevation to the lon·elevation section — leaving
+ * the lon·lat section, whose colour is then lon.
+ *
+ * Shared with `section-outlines.ts`: the caption and the outline in the 3D
+ * panel are the same cue, so they must agree.
+ */
+export function sectionColor(normalAxis: number): string {
+	return AXIS_COLORS[(normalAxis + 1) % 3];
+}
 
 /**
  * Stand-in for a display axis whose dimension the viewer can't name — fewer
@@ -105,12 +122,12 @@ export class ViewportLabels {
 				this.entries.set(panel, entry);
 			}
 			const axes = this.viewportAxes(entry.navigationState);
-			// The third display axis is the one this section cuts along; CSS reads the
-			// property to tint the caption.
+			// The third display axis is the one this section cuts along, which is what
+			// its colour is derived from; CSS reads the property to tint the caption.
 			const normal = 3 - axes[0] - axes[1];
 			panel.element.style.setProperty(
 				"--ocean-plane-color",
-				PLANE_COLORS[normal],
+				sectionColor(normal),
 			);
 			const text = axes
 				.map((axis) => this.displayDimensionName(axis))
