@@ -212,11 +212,28 @@
 	padding: 2px 5px;
 	border-radius: 4px;
 	background: rgb(0 0 0 / 45%);
-	color: #9aa0a6;
+	/* The colour of the axis this section cuts along, set per panel by that
+	   module and matching the section's outline in the 3D panel. */
+	color: var(--ocean-plane-color, #9aa0a6);
 	font-family: sans-serif;
 	font-size: 11px;
 	line-height: 1.4;
 	letter-spacing: 0.04em;
 	pointer-events: none;
 	user-select: none;
+}
+
+/* Cross-section outlines drawn over the 3D panel (injected by
+   wrapper/section-outlines.ts). One SVG per 3D panel, covering it entirely and
+   click-through, so it can't shadow a camera drag. */
+.ocean-section-outlines {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	/* A section reaches past the 3D panel's view whenever the camera is zoomed
+	   in on the data, and the rectangle is drawn in panel coordinates: without
+	   this its lines would run out over the neighbouring panels. Stated rather
+	   than left to the SVG default, since that is the whole point of the box. */
+	overflow: hidden;
+	pointer-events: none;
 }
