@@ -200,3 +200,23 @@
 	font-family: inherit;
 	font-size: 10px;
 }
+
+/* Plane caption in each cross-section panel's top-left corner (injected by
+   wrapper/viewport-labels.ts), replacing the Neuroglancer axis overlay hidden
+   above. Click-through, so it can't shadow a drag or a data click. */
+.ocean-viewport-label {
+	position: absolute;
+	top: 4px;
+	left: 4px;
+	z-index: 1;
+	padding: 2px 5px;
+	border-radius: 4px;
+	background: rgb(0 0 0 / 45%);
+	color: #9aa0a6;
+	font-family: sans-serif;
+	font-size: 11px;
+	line-height: 1.4;
+	letter-spacing: 0.04em;
+	pointer-events: none;
+	user-select: none;
+}
