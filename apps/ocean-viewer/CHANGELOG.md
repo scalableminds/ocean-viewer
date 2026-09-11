@@ -1,5 +1,14 @@
 # @scalableminds/ocean-viewer
 
+## 1.2.1
+
+### Patch Changes
+
+- [#7](https://github.com/scalableminds/ocean-viewer/pull/7) [`6c73482`](https://github.com/scalableminds/ocean-viewer/commit/6c73482926d2c3f5401bbcbb77b4003884899cae) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Removed:** Neuroglancer's yellow bounding box around the whole dataset
+  (`showDefaultAnnotations`). It is drawn in every panel and says nothing MyOcean
+  hasn't already told the user about the dataset's extent, so in an embedded
+  viewer it is noise.
+
 ## 1.2.0
 
 ### Minor Changes
