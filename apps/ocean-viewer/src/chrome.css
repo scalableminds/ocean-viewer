@@ -43,8 +43,8 @@
 	display: none !important;
 }
 
-/* Per-panel button clusters — camera on the 3D panel, rotation on the XY one
-   (injected by wrapper/viewport-controls.ts). The panel is already
+/* Per-panel button clusters — camera on the 3D panel, rotation and fullscreen
+   on the cross-sections (injected by wrapper/viewport-controls.ts). The panel is already
    `position: relative`, and the controls Neuroglancer normally puts in this
    corner are hidden above.
 
@@ -99,12 +99,30 @@
 /* Tilt each circle arrow towards the way it turns: the glyphs are near-closed
    rings whose direction is otherwise hard to read at a glance. The span keeps
    the tilt off the button box, so the hover background stays square. */
-.ocean-viewport-controls-rotation button:first-child > span {
+.ocean-viewport-controls-ccw > span {
 	transform: rotate(-30deg);
 }
 
-.ocean-viewport-controls-rotation button:last-child > span {
+.ocean-viewport-controls-cw > span {
 	transform: rotate(30deg);
+}
+
+/* Icon buttons (fullscreen). Centred, since the flex row stretches a button
+   next to the taller glyph ones; sized to sit with the glyphs it neighbours. */
+.ocean-viewport-controls-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.ocean-viewport-controls-icon > svg {
+	width: 12px;
+	height: 12px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.5;
+	stroke-linecap: round;
+	stroke-linejoin: round;
 }
 
 /* Navigation cheat sheet in the viewer's top-right corner (injected by
