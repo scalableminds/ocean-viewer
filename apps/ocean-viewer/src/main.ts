@@ -49,7 +49,10 @@ function bootstrap(): void {
 
 	// ⌂ restores the zoom the latest CONFIG asked for, falling back to
 	// Neuroglancer's fit-the-data default when none named one.
-	new ViewportControls(viewer, () => configApplier.projectionScale);
+	const viewportControls = new ViewportControls(
+		viewer,
+		() => configApplier.projectionScale,
+	);
 	// Captions the cross-sections XY / XZ / YZ, matching those align buttons.
 	new ViewportLabels(viewer);
 	// Outlines each cross-section in the 3D panel, in that caption's colour.
@@ -77,7 +80,10 @@ function bootstrap(): void {
 		// onto the first valid sender (handshake).
 		parentOrigin: import.meta.env.VITE_PARENT_ORIGIN || undefined,
 		onConfig: (message) => {
-			configApplier.apply(message);
+			// A panel the user made fullscreen survives CONFIGs that keep the layout.
+			viewportControls.keepFullscreenAcross(message.state.layout, () =>
+				configApplier.apply(message),
+			);
 			// The applied state is not a user interaction; don't echo it back.
 			reporter?.captureBaseline();
 		},
