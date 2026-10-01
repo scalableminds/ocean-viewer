@@ -11,6 +11,7 @@ import { PointerForwarder } from "./wrapper/pointer.js";
 import { Reporter } from "./wrapper/report.js";
 import { createViewer, parseHashState } from "./wrapper/viewer.js";
 import { ViewportControls } from "./wrapper/viewport-controls.js";
+import { ViewportLabels } from "./wrapper/viewport-labels.js";
 
 // Loaded last so these rules override Neuroglancer's own stylesheet.
 import "./chrome.css";
@@ -48,6 +49,8 @@ function bootstrap(): void {
 	// ⌂ restores the zoom the latest CONFIG asked for, falling back to
 	// Neuroglancer's fit-the-data default when none named one.
 	new ViewportControls(viewer, () => configApplier.projectionScale);
+	// Captions the cross-sections XY / XZ / YZ, matching those align buttons.
+	new ViewportLabels(viewer);
 	new NavigationHelp(target);
 	// Expose for debugging / automation.
 	(window as unknown as { viewer: unknown; oceanViewer: unknown }).viewer =
