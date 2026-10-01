@@ -1,5 +1,35 @@
 # @scalableminds/ocean-viewer
 
+## 1.2.1
+
+### Patch Changes
+
+- [#16](https://github.com/scalableminds/ocean-viewer/pull/16) [`fe43514`](https://github.com/scalableminds/ocean-viewer/commit/fe43514c1a69afa9c3486ee4fda0f8072d23661e) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Added:** A fullscreen toggle on each cross-section (XY, XZ and YZ), next to
+  the XY panel's rotation buttons. It switches the viewer to that panel alone and
+  back to the layout it was pressed in, keeping the camera and any rotation. The
+  3D panel has none. A fullscreen panel stays fullscreen across CONFIGs that keep
+  the layout (e.g. the full state re-sent on every layer edit); a CONFIG asking for
+  a different layout still wins.
+
+- [#7](https://github.com/scalableminds/ocean-viewer/pull/7) [`6c73482`](https://github.com/scalableminds/ocean-viewer/commit/6c73482926d2c3f5401bbcbb77b4003884899cae) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Changed:** Neuroglancer's yellow bounding box around the whole dataset
+  (`showDefaultAnnotations`) is no longer drawn. It appeared in every panel and
+  said nothing MyOcean hasn't already told the user about the dataset's extent,
+  so in an embedded viewer it was noise.
+
+- [#8](https://github.com/scalableminds/ocean-viewer/pull/8) [`7c78b07`](https://github.com/scalableminds/ocean-viewer/commit/7c78b07bc3ebd48479a15708cb1917d1969a5cbe) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Added:** Each cross-section is now outlined in the 3D panel where it cuts the
+  dataset bounds, in the colour of one of the axes it carries (x / y / z → red /
+  green / blue, as on Neuroglancer's crosshair), with the panel's caption tinted
+  to match — so it is obvious in
+  3D where the three sections lie and which panel shows which. The outline
+  follows the section as the user scrolls through the third dimension.
+
+- [#6](https://github.com/scalableminds/ocean-viewer/pull/6) [`a06f4ee`](https://github.com/scalableminds/ocean-viewer/commit/a06f4ee0032da32987584322f07ee79585683e3e) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Added:** Each cross-section panel now carries a caption in its top-left
+  corner naming the two dataset dimensions it spans, horizontal first — e.g.
+  `lon · lat` and `lon · depth` — so the three look-alike panels can be told
+  apart at a glance. The names are the ones the CONFIG's `dimensions` gives, and
+  the caption follows a renamed dimension and a turned section. It is
+  click-through, so it doesn't shadow panning or click/hover reporting.
+
 ## 1.2.0
 
 ### Minor Changes
