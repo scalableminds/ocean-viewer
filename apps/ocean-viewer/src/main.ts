@@ -9,6 +9,7 @@ import { registerOceanImageLayer } from "./wrapper/image-layer.js";
 import { NavigationHelp } from "./wrapper/navigation-help.js";
 import { PointerForwarder } from "./wrapper/pointer.js";
 import { Reporter } from "./wrapper/report.js";
+import { SectionOutlines } from "./wrapper/section-outlines.js";
 import { createViewer, parseHashState } from "./wrapper/viewer.js";
 import { ViewportControls } from "./wrapper/viewport-controls.js";
 import { ViewportLabels } from "./wrapper/viewport-labels.js";
@@ -51,6 +52,8 @@ function bootstrap(): void {
 	new ViewportControls(viewer, () => configApplier.projectionScale);
 	// Captions the cross-sections XY / XZ / YZ, matching those align buttons.
 	new ViewportLabels(viewer);
+	// Outlines each cross-section in the 3D panel, in that caption's colour.
+	new SectionOutlines(viewer);
 	new NavigationHelp(target);
 	// Expose for debugging / automation.
 	(window as unknown as { viewer: unknown; oceanViewer: unknown }).viewer =
