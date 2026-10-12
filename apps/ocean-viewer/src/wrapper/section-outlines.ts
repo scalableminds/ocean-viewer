@@ -25,9 +25,9 @@
 import type { RenderedPanel } from "neuroglancer/unstable/display_context.js";
 import type { ProjectionParameters } from "neuroglancer/unstable/projection_parameters.js";
 import type { WatchableValueInterface } from "neuroglancer/unstable/trackable_value.js";
-import { vec3, vec4 } from "neuroglancer/unstable/util/geom.js";
+import { type quat, vec3, vec4 } from "neuroglancer/unstable/util/geom.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
-import { sectionColor } from "./viewport-labels.js";
+import { sectionColorOf } from "./viewport-labels.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -52,6 +52,7 @@ const CORNERS: ReadonlyArray<readonly [number, number]> = [
 interface SectionView {
 	valid: boolean;
 	projectionParameters: WatchableValueInterface<ProjectionParameters>;
+	navigationState: { pose: { orientation: { orientation: quat } } };
 }
 
 /** The dataset bounds over the three display axes, in world coordinates. */
@@ -66,6 +67,19 @@ function columnOf(
 	column: number,
 ): [number, number, number] {
 	return [matrix[column * 4], matrix[column * 4 + 1], matrix[column * 4 + 2]];
+}
+
+/**
+ * The unit normal of a section's plane in world coordinates: the third row of
+ * its view matrix, as Neuroglancer's own `viewportNormalInGlobalCoordinates`.
+ * Not the third column of the inverse — under unequal display scales that
+ * direction leans out of perpendicular.
+ */
+export function planeNormalOf(viewMatrix: Float32Array): vec3 {
+	return vec3.normalize(
+		vec3.create(),
+		vec3.fromValues(viewMatrix[2], viewMatrix[6], viewMatrix[10]),
+	);
 }
 
 /** The 3D panel, as far as its sections are concerned. */
@@ -169,7 +183,9 @@ export class SectionOutlines {
 			);
 			rectangles.push({
 				points: rectangle.points,
-				color: sectionColor(this.normalAxisOf(section)),
+				color: sectionColorOf(
+					section.navigationState.pose.orientation.orientation,
+				),
 				// The camera looks down its own -z, so distance in front of it is -z.
 				depth: -inView[2],
 			});
@@ -216,10 +232,10 @@ export class SectionOutlines {
 		panelWidth: number,
 		panelHeight: number,
 	): { points: Array<[number, number]>; center: vec3 } | undefined {
-		const { invViewMatrix } = section.projectionParameters.value;
+		const { invViewMatrix, viewMatrix } = section.projectionParameters.value;
 		// Columns of the section's inverse view matrix: its two in-plane
-		// directions, its normal, and the position it is parked at. The first three
-		// carry the zoom as well, hence the normalisation.
+		// directions and the position it is parked at. The directions carry the
+		// zoom as well, hence the normalisation.
 		const inPlane = [
 			vec3.normalize(
 				vec3.create(),
@@ -230,10 +246,7 @@ export class SectionOutlines {
 				vec3.fromValues(...columnOf(invViewMatrix, 1)),
 			),
 		];
-		const normal = vec3.normalize(
-			vec3.create(),
-			vec3.fromValues(...columnOf(invViewMatrix, 2)),
-		);
+		const normal = planeNormalOf(viewMatrix);
 		const position = vec3.fromValues(...columnOf(invViewMatrix, 3));
 
 		// Slide the centre of the bounds onto the section's plane, so the rectangle
@@ -303,23 +316,6 @@ export class SectionOutlines {
 			halfSize[i] = (upper - lower) / 2;
 		}
 		return { center, halfSize };
-	}
-
-	/**
-	 * The display axis a section cuts along, read off the third column of its
-	 * inverse view matrix — the world direction its viewport's z axis points,
-	 * i.e. the plane's normal. Equivalent to the axes `viewport-labels.ts` reads
-	 * from the pose, so the caption and the outline agree on the colour.
-	 */
-	private normalAxisOf(section: SectionView): number {
-		const { invViewMatrix } = section.projectionParameters.value;
-		let axis = 0;
-		for (let i = 1; i < 3; ++i) {
-			if (Math.abs(invViewMatrix[8 + i]) > Math.abs(invViewMatrix[8 + axis])) {
-				axis = i;
-			}
-		}
-		return axis;
 	}
 
 	/**

@@ -18,9 +18,10 @@
 import type { RenderedPanel } from "neuroglancer/unstable/display_context.js";
 import type { ProjectionParameters } from "neuroglancer/unstable/projection_parameters.js";
 import type { WatchableValueInterface } from "neuroglancer/unstable/trackable_value.js";
-import { vec3, vec4 } from "neuroglancer/unstable/util/geom.js";
+import { type quat, vec3, vec4 } from "neuroglancer/unstable/util/geom.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
-import { sectionColor } from "./viewport-labels.js";
+import { planeNormalOf } from "./section-outlines.js";
+import { sectionColorOf } from "./viewport-labels.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -34,6 +35,7 @@ interface CrossSectionPanel extends RenderedPanel {
 	sliceView: {
 		valid: boolean;
 		projectionParameters: WatchableValueInterface<ProjectionParameters>;
+		navigationState: { pose: { orientation: { orientation: quat } } };
 	};
 }
 
@@ -55,20 +57,12 @@ function columnOf(matrix: Float32Array, column: number): vec3 {
 
 /** A section's plane in world coordinates. */
 function planeOf(panel: CrossSectionPanel): { normal: vec3; position: vec3 } {
-	const { invViewMatrix } = panel.sliceView.projectionParameters.value;
+	const { invViewMatrix, viewMatrix } =
+		panel.sliceView.projectionParameters.value;
 	return {
-		normal: vec3.normalize(vec3.create(), columnOf(invViewMatrix, 2)),
+		normal: planeNormalOf(viewMatrix),
 		position: columnOf(invViewMatrix, 3),
 	};
-}
-
-/** The display axis a plane cuts along: its normal's largest component. */
-function normalAxisOf(normal: vec3): number {
-	let axis = 0;
-	for (let i = 1; i < 3; ++i) {
-		if (Math.abs(normal[i]) > Math.abs(normal[axis])) axis = i;
-	}
-	return axis;
 }
 
 export class SectionLines {
@@ -206,7 +200,9 @@ export class SectionLines {
 		return {
 			from: [start[0] - dx * reach, start[1] - dy * reach],
 			to: [start[0] + dx * reach, start[1] + dy * reach],
-			color: sectionColor(normalAxisOf(cut.normal)),
+			color: sectionColorOf(
+				other.sliceView.navigationState.pose.orientation.orientation,
+			),
 		};
 	}
 
