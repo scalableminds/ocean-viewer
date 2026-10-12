@@ -241,6 +241,21 @@
 	user-select: none;
 }
 
+/* Lines where the other cross-sections cut each one (injected by
+   wrapper/section-lines.ts). Under the caption and controls, click-through, and
+   clipped to the panel, since each line is drawn longer than the panel. */
+.ocean-section-lines {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.ocean-section-lines line {
+	stroke-width: 1;
+	stroke-opacity: 0.7;
+}
+
 /* Cross-section outlines drawn over the 3D panel (injected by
    wrapper/section-outlines.ts). One SVG per 3D panel, covering it entirely and
    click-through, so it can't shadow a camera drag. */

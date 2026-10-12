@@ -9,6 +9,7 @@ import { registerOceanImageLayer } from "./wrapper/image-layer.js";
 import { NavigationHelp } from "./wrapper/navigation-help.js";
 import { PointerForwarder } from "./wrapper/pointer.js";
 import { Reporter } from "./wrapper/report.js";
+import { SectionLines } from "./wrapper/section-lines.js";
 import { SectionOutlines } from "./wrapper/section-outlines.js";
 import { createViewer, parseHashState } from "./wrapper/viewer.js";
 import { ViewportControls } from "./wrapper/viewport-controls.js";
@@ -57,6 +58,8 @@ function bootstrap(): void {
 	new ViewportLabels(viewer);
 	// Outlines each cross-section in the 3D panel, in that caption's colour.
 	new SectionOutlines(viewer);
+	// Marks where the other cross-sections cut each one, in the same colours.
+	new SectionLines(viewer);
 	new NavigationHelp(target);
 	// Expose for debugging / automation.
 	(window as unknown as { viewer: unknown; oceanViewer: unknown }).viewer =

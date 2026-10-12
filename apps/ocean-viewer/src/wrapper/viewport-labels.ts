@@ -15,7 +15,7 @@
 
 import type { RenderedPanel } from "neuroglancer/unstable/display_context.js";
 import type { NavigationState } from "neuroglancer/unstable/navigation_state.js";
-import { kAxes, vec3 } from "neuroglancer/unstable/util/geom.js";
+import { kAxes, type quat, vec3 } from "neuroglancer/unstable/util/geom.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
 
 const LABEL_CLASS = "ocean-viewport-label";
@@ -41,11 +41,44 @@ const AXIS_COLORS = ["#e2544c", "#5cb85c", "#5a8dee"] as const;
  * running *up* their panel — elevation to the lon·elevation section — leaving
  * the lon·lat section, whose colour is then lon.
  *
- * Shared with `section-outlines.ts`: the caption and the outline in the 3D
- * panel are the same cue, so they must agree.
+ * Shared with `section-outlines.ts` and `section-lines.ts`: the caption, the
+ * outline in the 3D panel and the cut lines are the same cue, so they must
+ * agree.
  */
 export function sectionColor(normalAxis: number): string {
 	return AXIS_COLORS[(normalAxis + 1) % 3];
+}
+
+/**
+ * The display axes running across and up a section, in that order.
+ *
+ * Read off the section's own pose rather than from the axes the layout derived
+ * it with: that mapping is relative to a base pose an unlinked layer group
+ * keeps to itself, and it says nothing about a section the user has since
+ * turned within its plane with ↻. Independent of display scales, so every
+ * module colouring a section by it agrees.
+ */
+export function viewportAxesOf(orientation: quat): [number, number] {
+	const axisOf = (viewportAxis: vec3) => {
+		// The pose orientation maps viewport axes onto the displayed ones.
+		const displayed = vec3.transformQuat(
+			vec3.create(),
+			viewportAxis,
+			orientation,
+		);
+		let axis = 0;
+		for (let i = 1; i < 3; ++i) {
+			if (Math.abs(displayed[i]) > Math.abs(displayed[axis])) axis = i;
+		}
+		return axis;
+	};
+	return [axisOf(kAxes[0]), axisOf(kAxes[1])];
+}
+
+/** The colour of a section with the given pose; see {@link sectionColor}. */
+export function sectionColorOf(orientation: quat): string {
+	const [across, up] = viewportAxesOf(orientation);
+	return sectionColor(3 - across - up);
 }
 
 /**
@@ -121,7 +154,9 @@ export class ViewportLabels {
 				};
 				this.entries.set(panel, entry);
 			}
-			const axes = this.viewportAxes(entry.navigationState);
+			const axes = viewportAxesOf(
+				entry.navigationState.pose.orientation.orientation,
+			);
 			// The third display axis is the one this section cuts along, which is what
 			// its colour is derived from; CSS reads the property to tint the caption.
 			const normal = 3 - axes[0] - axes[1];
@@ -157,32 +192,6 @@ export class ViewportLabels {
 		return candidate.inputEventMap === this.viewer.inputEventBindings.sliceView
 			? candidate.navigationState
 			: undefined;
-	}
-
-	/**
-	 * The display axes running across and up the panel, in that order.
-	 *
-	 * Read off the panel's own pose rather than from the axes the layout derived
-	 * it with: that mapping is relative to a base pose an unlinked layer group
-	 * keeps to itself, and it says nothing about a section the user has since
-	 * turned within its plane with ↻.
-	 */
-	private viewportAxes(navigationState: NavigationState): [number, number] {
-		const { orientation } = navigationState.pose.orientation;
-		const axisOf = (viewportAxis: vec3) => {
-			// The pose orientation maps viewport axes onto the displayed ones.
-			const displayed = vec3.transformQuat(
-				vec3.create(),
-				viewportAxis,
-				orientation,
-			);
-			let axis = 0;
-			for (let i = 1; i < 3; ++i) {
-				if (Math.abs(displayed[i]) > Math.abs(displayed[axis])) axis = i;
-			}
-			return axis;
-		};
-		return [axisOf(kAxes[0]), axisOf(kAxes[1])];
 	}
 
 	/** The dataset's name for a display axis, falling back to our letter for it. */
