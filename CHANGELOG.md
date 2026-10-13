@@ -5,6 +5,26 @@
 
 # @scalableminds/ocean-viewer
 
+## 1.2.2
+
+### Patch Changes
+
+- [#19](https://github.com/scalableminds/ocean-viewer/pull/19) [`8a09fb0`](https://github.com/scalableminds/ocean-viewer/commit/8a09fb0b9f6f64006c60165ce15cea38995660fc) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Fixed:** Rotating the data with ↺ / ↻ now turns the 3D panel too, not just
+  the 2D cross-sections. The 3D panel's ⌂ / XY / XZ / YZ buttons line the camera
+  up with the rotated sections, instead of snapping back to the unrotated data.
+  Each section's outline in the 3D panel now traces where that section actually
+  cuts the data, so it stays on the data's edges after a rotation.
+
+- [#17](https://github.com/scalableminds/ocean-viewer/pull/17) [`dd882d8`](https://github.com/scalableminds/ocean-viewer/commit/dd882d88973fae8867825804fe447cb525a8dd09) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Added:** Each cross-section now shows a line where each of the other
+  cross-sections on screen cuts it, in that section's colour, so the slice
+  orientation stays readable after the data is rotated. Neuroglancer's own axis
+  lines are off by default, in the 3D panel too; a CONFIG can turn them back on
+  with `showAxisLines: true`.
+
+- [#17](https://github.com/scalableminds/ocean-viewer/pull/17) [`e515967`](https://github.com/scalableminds/ocean-viewer/commit/e515967ee1d529c7855d646d2fe8e9e89483cfbb) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Fixed:** With unequal display scales on a rotated view, the cross-section
+  outlines in the 3D panel could sit off their plane or take another section's
+  colour.
+
 ## 1.2.1
 
 ### Patch Changes
