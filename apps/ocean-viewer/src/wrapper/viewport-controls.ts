@@ -6,9 +6,9 @@
  *
  * On the 3D panel, for recovering a camera tumbled by an undoable left-drag:
  *
- *   ⌂   reset — identity orientation plus the zoom the CONFIG asked for, or,
- *       when it named none, one recomputed to fit the data
- *   XY  ·  XZ  ·  YZ — align the camera with that principal plane
+ *   ⌂   reset — the XY section's orientation plus the zoom the CONFIG asked
+ *       for, or, when it named none, one recomputed to fit the data
+ *   XY  ·  XZ  ·  YZ — align the camera with that cross-section
  *
  * Only the orientation (and, for ⌂, the zoom) is touched — the perspective
  * navigation state shares its `Position` with the cross-section one, so
@@ -92,7 +92,7 @@ const ROTATION_STEP_DEGREES = 15;
 export const OVERLAY_ATTRIBUTE = "data-ocean-overlay";
 
 /**
- * Camera orientations for the principal planes, matching Neuroglancer's own
+ * Camera orientations relative to the XY section, matching Neuroglancer's own
  * `AXES_RELATIVE_ORIENTATION`. `xy` is the identity quaternion.
  */
 const AXIS_VIEWS: ReadonlyArray<{
@@ -102,17 +102,17 @@ const AXIS_VIEWS: ReadonlyArray<{
 }> = [
 	{
 		label: "XY",
-		title: "Align camera with the XY plane (top-down)",
+		title: "Align camera with the XY section (top-down)",
 		target: quat.create(),
 	},
 	{
 		label: "XZ",
-		title: "Align camera with the XZ plane",
+		title: "Align camera with the XZ section",
 		target: quat.rotateX(quat.create(), quat.create(), Math.PI / 2),
 	},
 	{
 		label: "YZ",
-		title: "Align camera with the YZ plane",
+		title: "Align camera with the YZ section",
 		target: quat.rotateY(quat.create(), quat.create(), Math.PI / 2),
 	},
 ];
@@ -306,18 +306,27 @@ export class ViewportControls {
 	 * Turning the cross-section's own pose, rather than the viewer's, is what
 	 * keeps this working when a layer group's navigation state is unlinked from
 	 * the viewer's. Neuroglancer mirrors the turn onto the xz / yz panels, since
-	 * their orientations are derived from this one; the 3D camera has its own
-	 * orientation and stays put.
+	 * their orientations are derived from this one. The 3D camera has its own
+	 * orientation, so it gets the same turn explicitly — about the XY plane's
+	 * normal, which keeps the planes still on screen while the data turns.
 	 */
 	private appendRotationButtons(
 		root: HTMLElement,
 		panel: RenderedDataPanel,
 	): void {
 		const rotate = (sign: number) => () => {
+			const { orientation } = panel.navigationState.pose.orientation;
+			const before = quat.invert(quat.create(), orientation);
 			panel.navigationState.pose.rotateRelative(
 				kAxes[2],
 				(sign * ROTATION_STEP_DEGREES * Math.PI) / 180,
 			);
+			// The turn in world space is `after · before⁻¹`, applied to the camera
+			// from the left.
+			const turn = quat.multiply(quat.create(), orientation, before);
+			const camera = this.viewer.projectionOrientation;
+			quat.multiply(camera.orientation, turn, camera.orientation);
+			camera.changed.dispatch();
 		};
 		// The classes are what CSS tilts the two arrows by, each towards the way it
 		// turns.
@@ -384,8 +393,8 @@ export class ViewportControls {
 				"⌂",
 				"Reset the 3D camera (orientation and zoom)",
 				() => {
-					const { pose, zoomFactor } = this.viewer.perspectiveNavigationState;
-					pose.orientation.reset();
+					const { zoomFactor } = this.viewer.perspectiveNavigationState;
+					this.alignCamera(quat.create());
 					const configured = this.configuredZoom();
 					if (configured === undefined) {
 						// Sets the value to NaN, so the next read recomputes the default zoom.
@@ -400,17 +409,27 @@ export class ViewportControls {
 
 		for (const { label, title, target } of AXIS_VIEWS) {
 			root.appendChild(
-				this.button(label, title, () => {
-					// `orientation` is a live gl-matrix quat that nothing observes, so
-					// the dispatch has to be explicit.
-					const orientation = this.viewer.projectionOrientation;
-					quat.copy(orientation.orientation, target);
-					orientation.changed.dispatch();
-				}),
+				this.button(label, title, () => this.alignCamera(target)),
 			);
 		}
 
 		return root;
+	}
+
+	/**
+	 * Turn the 3D camera to `relative` from the XY section, so it keeps matching
+	 * the cross-sections after ↺ / ↻ turned the data.
+	 */
+	private alignCamera(relative: quat): void {
+		// `orientation` is a live gl-matrix quat that nothing observes, so the
+		// dispatch has to be explicit.
+		const camera = this.viewer.projectionOrientation;
+		quat.multiply(
+			camera.orientation,
+			this.viewer.navigationState.pose.orientation.orientation,
+			relative,
+		);
+		camera.changed.dispatch();
 	}
 
 	/**
