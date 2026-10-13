@@ -36,12 +36,32 @@ const OVERLAY_CLASS = "ocean-section-outlines";
 /** Thin enough not to hide the data it borders, thick enough to read as a box. */
 const STROKE_WIDTH = 1.5;
 
-/** The corners of a section rectangle, as signs on its two in-plane axes. */
-const CORNERS: ReadonlyArray<readonly [number, number]> = [
-	[-1, -1],
-	[1, -1],
-	[1, 1],
-	[-1, 1],
+/** The corners of the dataset bounds, as signs on the three display axes. */
+const BOX_CORNERS: ReadonlyArray<readonly [number, number, number]> = [
+	[-1, -1, -1],
+	[1, -1, -1],
+	[-1, 1, -1],
+	[1, 1, -1],
+	[-1, -1, 1],
+	[1, -1, 1],
+	[-1, 1, 1],
+	[1, 1, 1],
+];
+
+/** The edges of the dataset bounds, as pairs of indices into `BOX_CORNERS`. */
+const BOX_EDGES: ReadonlyArray<readonly [number, number]> = [
+	[0, 1],
+	[2, 3],
+	[4, 5],
+	[6, 7],
+	[0, 2],
+	[1, 3],
+	[4, 6],
+	[5, 7],
+	[0, 4],
+	[1, 5],
+	[2, 6],
+	[3, 7],
 ];
 
 /**
@@ -105,7 +125,7 @@ export class SectionOutlines {
 	 * Redrawing is driven off `updateFinished` instead — the geometry follows the
 	 * 3D camera and the position of every section, and that signal fires once per
 	 * frame in which any of them moved, which is exactly when the outlines are
-	 * stale. Recomputing three rectangles is far cheaper than subscribing to each
+	 * stale. Recomputing three outlines is far cheaper than subscribing to each
 	 * of those states and reasoning about which ones have settled.
 	 */
 	constructor(private readonly viewer: Viewer) {
@@ -149,14 +169,14 @@ export class SectionOutlines {
 		}
 	};
 
-	/** Re-lay the rectangles of one 3D panel's sections. */
+	/** Re-lay the outlines of one 3D panel's sections. */
 	private drawPanel(panel: PerspectivePanelLike, overlay: SVGSVGElement): void {
 		const { width, height } = panel.element.getBoundingClientRect();
 		const { viewMatrix, viewProjectionMat } = panel.projectionParameters.value;
 		// A viewBox in CSS pixels keeps the stroke width honest at any DPR.
 		overlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
-		const rectangles: Array<{
+		const outlines: Array<{
 			points: Array<[number, number]>;
 			color: string;
 			depth: number;
@@ -168,21 +188,21 @@ export class SectionOutlines {
 			// outline never floats without its section.
 			if (bounds === undefined) break;
 			if (!(unconditional || showSliceViews) || !section.valid) continue;
-			const rectangle = this.cornersOf(
+			const outline = this.outlineOf(
 				section,
 				bounds,
 				viewProjectionMat,
 				width,
 				height,
 			);
-			if (rectangle === undefined) continue;
+			if (outline === undefined) continue;
 			const inView = vec3.transformMat4(
 				vec3.create(),
-				rectangle.center,
+				outline.center,
 				viewMatrix,
 			);
-			rectangles.push({
-				points: rectangle.points,
+			outlines.push({
+				points: outline.points,
 				color: sectionColorOf(
 					section.navigationState.pose.orientation.orientation,
 				),
@@ -192,9 +212,9 @@ export class SectionOutlines {
 		}
 		// Painter's algorithm, as far as stroked outlines take it: the section
 		// nearest the camera is drawn last, so at a crossing the near one wins.
-		rectangles.sort((a, b) => b.depth - a.depth);
+		outlines.sort((a, b) => b.depth - a.depth);
 
-		rectangles.forEach(({ points, color }, index) => {
+		outlines.forEach(({ points, color }, index) => {
 			const polygon =
 				overlay.children[index] instanceof SVGPolygonElement
 					? (overlay.children[index] as SVGPolygonElement)
@@ -207,25 +227,24 @@ export class SectionOutlines {
 			polygon.setAttribute("stroke", color);
 			polygon.setAttribute("stroke-width", String(STROKE_WIDTH));
 		});
-		// Sections come and go with the layout; drop the rectangles left over.
-		while (overlay.children.length > rectangles.length) {
+		// Sections come and go with the layout; drop the outlines left over.
+		while (overlay.children.length > outlines.length) {
 			overlay.lastElementChild?.remove();
 		}
 	}
 
 	/**
-	 * Where the section cuts the dataset bounds, as four corners in panel pixels
-	 * — or undefined when a corner falls behind the camera, since a perspective
-	 * projection turns those inside out and a rectangle with one bogus corner is
-	 * worse than none.
+	 * Where the section's plane cuts the dataset bounds, as a convex polygon in
+	 * panel pixels — undefined when the plane misses the bounds, or when a vertex
+	 * falls behind the camera, since a perspective projection turns those inside
+	 * out and an outline with one bogus vertex is worse than none.
 	 *
-	 * The rectangle is built in the section's own plane rather than from the two
-	 * bounding-box faces it runs between: a section the user has turned with ↻ is
-	 * not axis-aligned, and there the rectangle grows to the bounding box's
-	 * silhouette along each in-plane direction — never degenerate, and exactly
-	 * the data bounds again as soon as the pose is square.
+	 * The true cut rather than a rectangle in the section's own axes: once ↺ / ↻
+	 * has turned the sections, their axes no longer line up with the data's, and
+	 * only the cut keeps the outline on the data's edges — the XY section's is
+	 * the data's own x · y rectangle at any turn.
 	 */
-	private cornersOf(
+	private outlineOf(
 		section: SectionView,
 		bounds: DisplayBounds,
 		viewProjectionMat: Float32Array,
@@ -233,48 +252,58 @@ export class SectionOutlines {
 		panelHeight: number,
 	): { points: Array<[number, number]>; center: vec3 } | undefined {
 		const { invViewMatrix, viewMatrix } = section.projectionParameters.value;
-		// Columns of the section's inverse view matrix: its two in-plane
-		// directions and the position it is parked at. The directions carry the
-		// zoom as well, hence the normalisation.
-		const inPlane = [
-			vec3.normalize(
-				vec3.create(),
-				vec3.fromValues(...columnOf(invViewMatrix, 0)),
-			),
-			vec3.normalize(
-				vec3.create(),
-				vec3.fromValues(...columnOf(invViewMatrix, 1)),
-			),
-		];
 		const normal = planeNormalOf(viewMatrix);
+		// The fourth column of the inverse view matrix: where the section is parked.
 		const position = vec3.fromValues(...columnOf(invViewMatrix, 3));
+		const distanceOf = (point: vec3) =>
+			vec3.dot(vec3.sub(vec3.create(), point, position), normal);
 
-		// Slide the centre of the bounds onto the section's plane, so the rectangle
-		// tracks the third dimension as the user scrolls through it.
-		const center = vec3.scaleAndAdd(
-			vec3.create(),
-			bounds.center,
-			normal,
-			-vec3.dot(vec3.sub(vec3.create(), bounds.center, position), normal),
-		);
-		// Half-extent of the bounds along an in-plane direction: its support
-		// function, which for an axis-aligned direction picks out that axis alone.
-		const halfExtents = inPlane.map((direction) => {
-			let extent = 0;
-			for (let axis = 0; axis < 3; ++axis) {
-				extent += Math.abs(direction[axis]) * bounds.halfSize[axis];
-			}
-			return extent;
+		const corners = BOX_CORNERS.map(([x, y, z]) => {
+			const corner = vec3.fromValues(x, y, z);
+			vec3.multiply(corner, corner, bounds.halfSize);
+			return vec3.add(corner, corner, bounds.center);
 		});
+		const distances = corners.map(distanceOf);
+		// Where each box edge crosses the plane. A plane through a corner, or along
+		// a face, finds the same vertex from several edges; dropped below.
+		const cut: vec3[] = [];
+		for (const [a, b] of BOX_EDGES) {
+			const [da, db] = [distances[a], distances[b]];
+			if (da === 0) cut.push(corners[a]);
+			if (db === 0) cut.push(corners[b]);
+			if (da * db < 0) {
+				cut.push(
+					vec3.lerp(vec3.create(), corners[a], corners[b], da / (da - db)),
+				);
+			}
+		}
+		const epsilon = 1e-6 * vec3.length(bounds.halfSize);
+		const vertices = cut.filter(
+			(vertex, index) =>
+				cut.findIndex((other) => vec3.distance(vertex, other) <= epsilon) ===
+				index,
+		);
+		if (vertices.length < 3) return undefined;
+
+		// The cut of a box by a plane is convex, so its vertices go round in order
+		// of their angle about the centroid, measured in the section's own axes.
+		const center = vec3.create();
+		for (const vertex of vertices) vec3.add(center, center, vertex);
+		vec3.scale(center, center, 1 / vertices.length);
+		const [u, v] = [0, 1].map((column) =>
+			vec3.fromValues(...columnOf(invViewMatrix, column)),
+		);
+		const angleOf = (vertex: vec3) => {
+			const offset = vec3.sub(vec3.create(), vertex, center);
+			return Math.atan2(vec3.dot(offset, v), vec3.dot(offset, u));
+		};
+		vertices.sort((a, b) => angleOf(a) - angleOf(b));
 
 		const points: Array<[number, number]> = [];
-		for (const [u, v] of CORNERS) {
-			const corner = vec3.clone(center);
-			vec3.scaleAndAdd(corner, corner, inPlane[0], u * halfExtents[0]);
-			vec3.scaleAndAdd(corner, corner, inPlane[1], v * halfExtents[1]);
+		for (const vertex of vertices) {
 			const clip = vec4.transformMat4(
 				vec4.create(),
-				vec4.fromValues(corner[0], corner[1], corner[2], 1),
+				vec4.fromValues(vertex[0], vertex[1], vertex[2], 1),
 				viewProjectionMat,
 			);
 			if (clip[3] <= 0) return undefined;
