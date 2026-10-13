@@ -277,11 +277,16 @@ export class SectionOutlines {
 				);
 			}
 		}
-		const epsilon = 1e-6 * vec3.length(bounds.halfSize);
+		// Per axis, relative to that axis's extent: the display axes can differ in
+		// coordinate range by orders of magnitude, and one tolerance for all would
+		// merge distinct vertices across the shortest.
+		const isSame = (a: vec3, b: vec3) =>
+			[0, 1, 2].every(
+				(axis) => Math.abs(a[axis] - b[axis]) <= 1e-6 * bounds.halfSize[axis],
+			);
 		const vertices = cut.filter(
 			(vertex, index) =>
-				cut.findIndex((other) => vec3.distance(vertex, other) <= epsilon) ===
-				index,
+				cut.findIndex((other) => isSame(vertex, other)) === index,
 		);
 		if (vertices.length < 3) return undefined;
 
