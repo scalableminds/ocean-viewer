@@ -108,7 +108,9 @@ export function buildFullState(
 		// `layers.ts`), so the surface sits at the top of the axis.
 		position: [0, 0, 0, N_TIMES - 1],
 		crossSectionScale: 0.9,
-		projectionScale: 250,
+		// World units across the 3D panel's HEIGHT. The 3panel layout's 3D column
+		// is about half as wide as it is tall, so this frames ~250° of longitude.
+		projectionScale: 450,
 		layout: "3panel",
 		layers: layersToState(layers),
 	};

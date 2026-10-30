@@ -20,6 +20,7 @@ import { PerspectivePanel } from "neuroglancer/unstable/perspective_view/panel.j
 import { SliceViewPanel } from "neuroglancer/unstable/sliceview/panel.js";
 import { RefCounted } from "neuroglancer/unstable/util/disposable.js";
 import { removeChildren } from "neuroglancer/unstable/util/dom.js";
+import { widenOrthographicDepth } from "./orthographic-depth.js";
 
 export const THREE_PANEL_LAYOUT = "3panel";
 
@@ -69,6 +70,10 @@ class ThreePanelLayout extends RefCounted {
 			L.withFlex(1, (element) => {
 				const panel = this.registerDisposer(
 					new PerspectivePanel(display, element, perspectiveViewerState),
+				);
+				widenOrthographicDepth(
+					panel,
+					perspectiveViewerState.orthographicProjection,
 				);
 				// Each section panel owns its slice view; the 3D panel borrows both.
 				panel.sliceViews.set(xy.addRef(), false);
