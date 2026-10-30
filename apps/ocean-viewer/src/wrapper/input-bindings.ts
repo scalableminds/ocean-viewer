@@ -63,8 +63,9 @@ export function swapWheelBindings(): void {
  * back to their unmodified counterparts, so a stray `shift` does nothing at all
  * instead of quietly panning or stepping.
  *
- * Tumbling the 3D camera is untouched, by mouse drag or by one-finger touch
- * drag, and so are `r` / `e` (in-plane rotation by keyboard).
+ * Turning the 3D camera by mouse or one-finger touch drag stays, as a
+ * turntable (`upright-camera.ts`), and so do `r` / `e` (in-plane rotation by
+ * keyboard; a spin about depth in 3D).
  */
 export function disableRotationBindings(): void {
 	const bindings = getDefaultRenderedDataPanelBindings();

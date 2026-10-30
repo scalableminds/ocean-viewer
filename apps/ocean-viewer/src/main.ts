@@ -12,6 +12,7 @@ import { Reporter } from "./wrapper/report.js";
 import { SectionLines } from "./wrapper/section-lines.js";
 import { SectionOutlines } from "./wrapper/section-outlines.js";
 import { registerThreePanelLayout } from "./wrapper/three-panel-layout.js";
+import { UprightCamera } from "./wrapper/upright-camera.js";
 import { createViewer, parseHashState } from "./wrapper/viewer.js";
 import { ViewportControls } from "./wrapper/viewport-controls.js";
 import { ViewportLabels } from "./wrapper/viewport-labels.js";
@@ -49,6 +50,9 @@ function bootstrap(): void {
 	// ConfigApplier captures the pristine default state in its constructor, so
 	// create it before any state is applied.
 	const configApplier = new ConfigApplier(viewer);
+
+	// Turntable 3D camera that can't roll the world upside down.
+	new UprightCamera(viewer);
 
 	// ⌂ restores the zoom the latest CONFIG asked for, falling back to
 	// Neuroglancer's fit-the-data default when none named one.
