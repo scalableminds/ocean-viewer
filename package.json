@@ -19,10 +19,10 @@
 		"release": "npm run build -w @scalableminds/ocean-viewer && npm run test:smoke -w @scalableminds/ocean-viewer"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.1",
-		"@changesets/changelog-github": "^1.0.0",
-		"@changesets/cli": "^3.0.0",
+		"@biomejs/biome": "^2.6.4",
+		"@changesets/changelog-github": "^1.0.1",
+		"@changesets/cli": "^3.0.3",
 		"typescript": "^7.0.2",
-		"vite": "^8.1.0"
+		"vite": "^8.3.5"
 	}
 }
