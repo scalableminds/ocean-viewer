@@ -8,7 +8,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,7 +35,14 @@ function packAndExtract(): string {
 	execFileSync("tar", ["-xzf", join(dir, tarball), "-C", dir], {
 		stdio: "pipe",
 	});
-	return join(dir, "package", "dist");
+	const dist = join(dir, "package", "dist");
+	// `npm pack` doesn't build; without this an unbuilt tree fails as "no READY".
+	if (!existsSync(join(dist, "index.html"))) {
+		throw new Error(
+			"tarball has no dist/index.html; run `npm run build` first (or `npm run release` at the repo root)",
+		);
+	}
+	return dist;
 }
 
 function viewerFrame(page: Page, origin: string): Frame {
@@ -67,7 +74,7 @@ function readShowAxisLines(frame: Frame): Promise<boolean | undefined> {
 }
 
 test.describe("packaged bundle", () => {
-	let servers: StaticServer[];
+	let servers: StaticServer[] = [];
 	let hostOrigin: string;
 	let viewerOrigin: string;
 

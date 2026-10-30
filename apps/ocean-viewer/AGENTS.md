@@ -42,7 +42,7 @@ npm install        # if it fails on the ikonate git dep, see README install note
 npm run dev        # http://localhost:5174
 npm run typecheck  # tsc --noEmit — must stay clean
 npm run build
-npm run test:smoke # packs the tarball and loads it from a sub-path
+npm run test:smoke # packs the tarball and loads it from a sub-path (build first)
 ```
 
 Run `test:smoke` after any change to the bundler, the worker setup or
