@@ -108,8 +108,12 @@ export interface NeuroglancerLayerJson {
 	[key: string]: unknown;
 }
 
-/** One of Neuroglancer's built-in multi-panel data panel layouts. */
+/**
+ * A data panel layout: Neuroglancer's built-ins, plus the Ocean Viewer's default
+ * `3panel` (XY over XZ on the left, 3D on the right).
+ */
 export type DataPanelLayoutType =
+	| "3panel"
 	| "4panel-alt"
 	| "4panel"
 	| "xy"

@@ -11,6 +11,7 @@ import { PointerForwarder } from "./wrapper/pointer.js";
 import { Reporter } from "./wrapper/report.js";
 import { SectionLines } from "./wrapper/section-lines.js";
 import { SectionOutlines } from "./wrapper/section-outlines.js";
+import { registerThreePanelLayout } from "./wrapper/three-panel-layout.js";
 import { createViewer, parseHashState } from "./wrapper/viewer.js";
 import { ViewportControls } from "./wrapper/viewport-controls.js";
 import { ViewportLabels } from "./wrapper/viewport-labels.js";
@@ -21,7 +22,7 @@ import "./chrome.css";
 /**
  * Bootstrap the Ocean Viewer.
  *
- * Creates Neuroglancer (4-panel layout) with a one-off `#!{JSON}` hash seed,
+ * Creates Neuroglancer (3-panel layout) with a one-off `#!{JSON}` hash seed,
  * then attaches the MyOcean postMessage bridge:
  *   - inbound CONFIG  → applied to the viewer state (full or partial)
  *   - outbound READY  → sent once when the bridge is listening
@@ -41,6 +42,7 @@ function bootstrap(): void {
 	// Swap in the Ocean image layer before any layer is created, so every image
 	// layer reports values in physical units.
 	registerOceanImageLayer();
+	registerThreePanelLayout();
 
 	const viewer = createViewer(target);
 

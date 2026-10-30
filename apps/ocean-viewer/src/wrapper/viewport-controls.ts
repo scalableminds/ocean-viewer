@@ -21,7 +21,9 @@
  *   ↺  ·  ↻ — rotate by {@link ROTATION_STEP_DEGREES}° per press
  *
  * On every cross-section, a fullscreen toggle that switches to the layout of
- * that panel alone and back to the one it was pressed in.
+ * that panel alone and back to the one it was pressed in. Space (and
+ * shift + Space) over a panel does the same, in place of Neuroglancer's own
+ * layout toggle, which always returns to `4panel-alt`.
  */
 
 import type { ViewerStateJson } from "@ocean-viewer/protocol";
@@ -81,6 +83,12 @@ const QUAT_EPSILON = 1e-5;
 interface DataPanelLayout {
 	name: string;
 }
+
+/** Neuroglancer's Space / shift + Space actions, taken over by the fullscreen toggle. */
+const TOGGLE_LAYOUT_ACTIONS = [
+	"action:toggle-layout",
+	"action:toggle-layout-alternative",
+] as const;
 
 /** Turn per press of ↺ / ↻, small enough to nudge a map into alignment. */
 const ROTATION_STEP_DEGREES = 15;
@@ -148,12 +156,19 @@ export class ViewportControls {
 		this.observer = new MutationObserver(this.apply);
 		this.observer.observe(viewer.element, { childList: true, subtree: true });
 		viewer.layout.changed.add(this.forgetStaleFullscreen);
+		// Capture, so this runs before the listener each layout puts on its panels.
+		for (const type of TOGGLE_LAYOUT_ACTIONS) {
+			viewer.element.addEventListener(type, this.onToggleLayout, true);
+		}
 		this.apply();
 	}
 
 	dispose(): void {
 		this.observer.disconnect();
 		this.viewer.layout.changed.remove(this.forgetStaleFullscreen);
+		for (const type of TOGGLE_LAYOUT_ACTIONS) {
+			this.viewer.element.removeEventListener(type, this.onToggleLayout, true);
+		}
 		for (const overlay of this.viewer.element.querySelectorAll(
 			`.${CONTROLS_CLASS}`,
 		)) {
@@ -202,6 +217,43 @@ export class ViewportControls {
 		// Set first, so the layout change below doesn't read as stale.
 		this.fullscreen = { from: layout.name, to: fullscreen.to };
 		layout.name = fullscreen.to;
+	}
+
+	/**
+	 * Space over a panel: what its fullscreen button would do, and nothing where
+	 * it has none — the 3D panel included, since a lone `3d` layout shows no
+	 * sections and so no data.
+	 */
+	private readonly onToggleLayout = (event: Event): void => {
+		event.stopPropagation();
+		event.preventDefault();
+		if (this.fullscreen !== undefined) {
+			this.exitFullscreen(this.fullscreen);
+			return;
+		}
+		const layout = this.dataPanelLayout();
+		if (layout === undefined || SINGLE_PANEL_LAYOUTS.has(layout.name)) return;
+		const target = event.target as Node;
+		for (const panel of this.viewer.display.panels) {
+			if (!panel.element.contains(target)) continue;
+			const section = this.crossSectionOf(panel);
+			if (section !== undefined) this.enterFullscreen(section);
+			return;
+		}
+	};
+
+	private enterFullscreen(section: string): void {
+		const layout = this.dataPanelLayout();
+		if (layout === undefined) return;
+		// Set first, so the layout change it causes doesn't read as stale.
+		this.fullscreen = { from: layout.name, to: section };
+		layout.name = section;
+	}
+
+	private exitFullscreen(fullscreen: { from: string }): void {
+		this.fullscreen = undefined;
+		const layout = this.dataPanelLayout();
+		if (layout !== undefined) layout.name = fullscreen.from;
 	}
 
 	private readonly forgetStaleFullscreen = (): void => {
@@ -365,23 +417,15 @@ export class ViewportControls {
 		if (layout === undefined) return undefined;
 		const { fullscreen } = this;
 		if (fullscreen !== undefined) {
-			return this.iconButton(EXIT_FULLSCREEN_PATH, "Exit fullscreen", () => {
-				this.fullscreen = undefined;
-				const current = this.dataPanelLayout();
-				if (current !== undefined) current.name = fullscreen.from;
-			});
+			return this.iconButton(EXIT_FULLSCREEN_PATH, "Exit fullscreen", () =>
+				this.exitFullscreen(fullscreen),
+			);
 		}
 		if (SINGLE_PANEL_LAYOUTS.has(layout.name)) return undefined;
 		return this.iconButton(
 			ENTER_FULLSCREEN_PATH,
 			"Show this panel fullscreen",
-			() => {
-				const current = this.dataPanelLayout();
-				if (current === undefined) return;
-				// Set first, so the layout change it causes doesn't read as stale.
-				this.fullscreen = { from: current.name, to: section };
-				current.name = section;
-			},
+			() => this.enterFullscreen(section),
 		);
 	}
 

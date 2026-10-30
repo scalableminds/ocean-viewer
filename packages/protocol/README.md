@@ -124,7 +124,7 @@ A real CONFIG message, exactly as the `my-ocean-mock` demo posts it (see `apps/m
     "position": [0, 0, 0],
     "crossSectionScale": 0.9,
     "projectionScale": 2048,
-    "layout": "4panel-alt",
+    "layout": "3panel",
     "layers": [
       {
         "type": "image",

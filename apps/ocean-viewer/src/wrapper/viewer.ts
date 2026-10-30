@@ -20,9 +20,10 @@ import {
 	disableRotationBindings,
 	swapWheelBindings,
 } from "./input-bindings.js";
+import { THREE_PANEL_LAYOUT } from "./three-panel-layout.js";
 
 /** Fallback when the layout being normalised doesn't name a type itself. */
-const DEFAULT_LAYOUT_TYPE = "4panel-alt";
+const DEFAULT_LAYOUT_TYPE = THREE_PANEL_LAYOUT;
 
 export function createViewer(target: HTMLElement): Viewer {
 	const viewer = makeDefaultViewer({
@@ -46,7 +47,6 @@ export function createViewer(target: HTMLElement): Viewer {
 
 	// Set before ConfigApplier captures the pristine state, so these persist
 	// across CONFIGs unless explicitly overridden.
-	const current = viewer.state.toJSON() as ViewerStateJson;
 	viewer.state.restoreState({
 		hideCrossSectionBackground3D: true,
 		crossSectionBackgroundColor: "#000000",
@@ -56,7 +56,7 @@ export function createViewer(target: HTMLElement): Viewer {
 		showAxisLines: false,
 		// The yellow outline Neuroglancer draws around the dataset bounds
 		showDefaultAnnotations: false,
-		layout: withOrthographicDefault(current.layout),
+		layout: withOrthographicDefault(THREE_PANEL_LAYOUT),
 	});
 
 	// @ts-expect-error: Expose the viewer globally for debugging
