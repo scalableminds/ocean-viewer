@@ -1,6 +1,6 @@
 {
 	"name": "@scalableminds/ocean-viewer",
-	"version": "1.2.2",
+	"version": "1.3.0",
 	"private": true,
 	"type": "module",
 	"description": "Volumetric Viewer for the MyOcean Data Portal, built on Neuroglancer. Embed as an <iframe>, drive it over postMessage.",

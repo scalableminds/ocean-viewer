@@ -5,6 +5,20 @@
 
 # @scalableminds/ocean-viewer
 
+## 1.3.0
+
+### Minor Changes
+
+- [#21](https://github.com/scalableminds/ocean-viewer/pull/21) [`ca23b30`](https://github.com/scalableminds/ocean-viewer/commit/ca23b30a4a979385774e35f926f4f97efcb24d5d) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Added:** A `3panel` layout — the lon/lat map above the lon/depth section on the left, the 3D view filling the right column — now the default when a CONFIG names no `layout`. Hosts that send `"4panel-alt"` keep the four-panel view. Space over a section now toggles it fullscreen exactly like its fullscreen button, returning to the layout it came from; over the 3D panel it does nothing.
+
+### Patch Changes
+
+- [#25](https://github.com/scalableminds/ocean-viewer/pull/25) [`adb0701`](https://github.com/scalableminds/ocean-viewer/commit/adb070128653c3b259ce0f7137a5af99e2722c06) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Fixed:** The 3D view no longer clips content close to the viewer when zoomed in.
+
+- [#22](https://github.com/scalableminds/ocean-viewer/pull/22) [`afd62e1`](https://github.com/scalableminds/ocean-viewer/commit/afd62e190a0dc5585651ac845467dd03bb13521b) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Fixed:** Right-clicking (or ctrl+clicking) a layer tab no longer opens Neuroglancer's layer settings panel. All of Neuroglancer's side panels now stay closed, including ones a CONFIG's `selectedLayer` asks for.
+
+- [#24](https://github.com/scalableminds/ocean-viewer/pull/24) [`62a1b08`](https://github.com/scalableminds/ocean-viewer/commit/62a1b08b669386bbff275013cc98e63e2053970a) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Changed:** The bundle is now built with Vite 8.3.5 (was 8.1.0), which picks up upstream security fixes in the build toolchain. No changes to the embed contract; hosts need do nothing.
+
 ## 1.2.2
 
 ### Patch Changes
