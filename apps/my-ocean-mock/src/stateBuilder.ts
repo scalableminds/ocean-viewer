@@ -84,7 +84,7 @@ const DIMENSIONS: Record<string, [number, string]> = {
  * Build the initial full CONFIG state.
  *
  * Display dimensions default to the first three (x, y, elevation), so the
- * 4-panel layout shows the lon/lat map plus elevation sections. `position`
+ * 3-panel layout shows the lon/lat map plus the lon/elevation section. `position`
  * seeds an accessible slice: lon 0°, lat 0°, surface, most recent day.
  *
  * It must carry one entry per dimension in {@link DIMENSIONS}. Neuroglancer
@@ -109,7 +109,7 @@ export function buildFullState(
 		position: [0, 0, 0, N_TIMES - 1],
 		crossSectionScale: 0.9,
 		projectionScale: 250,
-		layout: "4panel-alt",
+		layout: "3panel",
 		layers: layersToState(layers),
 	};
 }
