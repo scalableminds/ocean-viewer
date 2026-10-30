@@ -15,6 +15,7 @@ import {
 } from "neuroglancer/unstable/ui/default_clipboard_handling.js";
 import { setDefaultInputEventBindings } from "neuroglancer/unstable/ui/default_input_event_bindings.js";
 import { makeDefaultViewer } from "neuroglancer/unstable/ui/default_viewer.js";
+import type { RegisteredSidePanel } from "neuroglancer/unstable/ui/side_panel.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
 import {
 	disableRotationBindings,
@@ -43,6 +44,7 @@ export function createViewer(target: HTMLElement): Viewer {
 	disableRotationBindings();
 	bindDefaultCopyHandler(viewer);
 	bindDefaultPasteHandler(viewer);
+	suppressSidePanels(viewer);
 
 	// Set before ConfigApplier captures the pristine state, so these persist
 	// across CONFIGs unless explicitly overridden.
@@ -63,6 +65,27 @@ export function createViewer(target: HTMLElement): Viewer {
 	window.viewer = viewer;
 
 	return viewer;
+}
+
+/**
+ * Keep every Neuroglancer side panel (layer settings, selection, help, …) closed.
+ *
+ * They open from many places — right-click or ctrl+click on a layer tab, key
+ * bindings, a `selectedLayer` in CONFIG — so close them all just before each
+ * layout pass instead of chasing every trigger.
+ */
+function suppressSidePanels(viewer: Viewer): void {
+	const manager = viewer.sidePanelManager;
+	// `registeredPanels` is private in the typings; it also holds per-layer
+	// panels registered later.
+	const { registeredPanels } = manager as unknown as {
+		registeredPanels: Set<RegisteredSidePanel>;
+	};
+	manager.beforeRender.add(() => {
+		for (const { location } of registeredPanels) {
+			location.visible = false;
+		}
+	});
 }
 
 /**
