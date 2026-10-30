@@ -4,7 +4,7 @@
  * undiscoverable in an iframe, so anything the user needs to reach has to be a
  * visible button.
  *
- * On the 3D panel, for recovering a camera tumbled by an undoable left-drag:
+ * On the 3D panel, for getting back to a known view after a left-drag:
  *
  *   ⌂   reset — the XY section's orientation plus the zoom the CONFIG asked
  *       for, or, when it named none, one recomputed to fit the data
