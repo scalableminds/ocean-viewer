@@ -105,7 +105,11 @@ export class ConfigApplier {
 	private applyPartial(state: ViewerStateJson): void {
 		const current = this.viewer.state.toJSON() as ViewerStateJson;
 		const merged: ViewerStateJson = { ...state };
+		// A new pose carries the 3D camera along (`upright-camera.ts`); restoring
+		// the old camera on top would undo that.
+		const followsPose = "crossSectionOrientation" in state;
 		for (const key of PRESERVED_CAMERA_KEYS) {
+			if (key === "projectionOrientation" && followsPose) continue;
 			if (!(key in state) && key in current) {
 				copyKey(merged, current, key);
 			}
