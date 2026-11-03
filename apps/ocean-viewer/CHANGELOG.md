@@ -1,5 +1,11 @@
 # @scalableminds/ocean-viewer
 
+## 1.4.0
+
+### Minor Changes
+
+- [#26](https://github.com/scalableminds/ocean-viewer/pull/26) [`c6c6d6e`](https://github.com/scalableminds/ocean-viewer/commit/c6c6d6eec68a19a09763920962234e32b9767640) Thanks [@hotzenklotz](https://github.com/hotzenklotz)! - **Changed:** The 3D camera now stays north-up: meridians always run up and down the screen, so the map can no longer be rolled sideways or upside down. Dragging in the 3D panel turns it like a turntable on a north–south axis: horizontally to spin about that axis, vertically to tilt until looking along it from the south or the north. A CONFIG whose `projectionOrientation` has a roll is levelled on arrival, keeping its view direction. A partial CONFIG that sets `crossSectionOrientation` without `projectionOrientation` now turns the 3D camera with the data, as ↺ / ↻ do. Hosts that strip the roll themselves from REPORTs can stop doing so.
+
 ## 1.3.0
 
 ### Minor Changes
