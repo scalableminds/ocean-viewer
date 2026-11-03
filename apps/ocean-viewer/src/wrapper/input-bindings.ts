@@ -65,7 +65,7 @@ export function swapWheelBindings(): void {
  *
  * Turning the 3D camera by mouse or one-finger touch drag stays, as a
  * turntable (`upright-camera.ts`), and so do `r` / `e` (in-plane rotation by
- * keyboard; a spin about depth in 3D).
+ * keyboard; in 3D, a turntable spin about the latitude axis).
  */
 export function disableRotationBindings(): void {
 	const bindings = getDefaultRenderedDataPanelBindings();

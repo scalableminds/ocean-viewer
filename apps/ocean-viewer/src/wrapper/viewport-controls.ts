@@ -32,6 +32,7 @@ import type { NavigationState } from "neuroglancer/unstable/navigation_state.js"
 import type { RenderedDataPanel } from "neuroglancer/unstable/rendered_data_panel.js";
 import { kAxes, quat } from "neuroglancer/unstable/util/geom.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
+import { isPerspectivePanel, relativeToPose } from "./panels.js";
 
 const CONTROLS_CLASS = "ocean-viewport-controls";
 
@@ -182,7 +183,7 @@ export class ViewportControls {
 			if (panel.element.querySelector(`:scope > .${CONTROLS_CLASS}`) !== null) {
 				continue;
 			}
-			if (this.isPerspectivePanel(panel)) {
+			if (isPerspectivePanel(this.viewer, panel)) {
 				panel.element.appendChild(this.buildCameraControls());
 			} else {
 				const controls = this.buildCrossSectionControls(panel);
@@ -275,18 +276,6 @@ export class ViewportControls {
 	}
 
 	/**
-	 * Identify the 3D panel by the input bindings it was wired with, rather than
-	 * with `instanceof PerspectivePanel` — a layer group hands each panel a
-	 * linked copy of its navigation state, but the event maps pass through as-is.
-	 */
-	private isPerspectivePanel(panel: RenderedPanel): panel is RenderedDataPanel {
-		return (
-			(panel as RenderedPanel & { inputEventMap?: unknown }).inputEventMap ===
-			this.viewer.inputEventBindings.perspectiveView
-		);
-	}
-
-	/**
 	 * Name a cross-section by its orientation: `xy`, `xz` or `yz`, or undefined
 	 * for any other panel. Neuroglancer builds the XY panel straight on the layer
 	 * group's own pose and derives xz / yz from it with a fixed quarter turn, so
@@ -304,12 +293,8 @@ export class ViewportControls {
 		) {
 			return undefined;
 		}
-		const relative = quat.multiply(
-			quat.create(),
-			quat.invert(
-				quat.create(),
-				this.viewer.navigationState.pose.orientation.orientation,
-			),
+		const relative = relativeToPose(
+			this.viewer,
 			candidate.navigationState.pose.orientation.orientation,
 		);
 		return CROSS_SECTIONS.find(
@@ -358,27 +343,19 @@ export class ViewportControls {
 	 * Turning the cross-section's own pose, rather than the viewer's, is what
 	 * keeps this working when a layer group's navigation state is unlinked from
 	 * the viewer's. Neuroglancer mirrors the turn onto the xz / yz panels, since
-	 * their orientations are derived from this one. The 3D camera has its own
-	 * orientation, so it gets the same turn explicitly — about the XY plane's
-	 * normal, which keeps the planes still on screen while the data turns.
+	 * their orientations are derived from this one, and `upright-camera.ts`
+	 * turns the 3D camera with the pose, so the planes stay still on screen
+	 * while the data turns.
 	 */
 	private appendRotationButtons(
 		root: HTMLElement,
 		panel: RenderedDataPanel,
 	): void {
 		const rotate = (sign: number) => () => {
-			const { orientation } = panel.navigationState.pose.orientation;
-			const before = quat.invert(quat.create(), orientation);
 			panel.navigationState.pose.rotateRelative(
 				kAxes[2],
 				(sign * ROTATION_STEP_DEGREES * Math.PI) / 180,
 			);
-			// The turn in world space is `after · before⁻¹`, applied to the camera
-			// from the left.
-			const turn = quat.multiply(quat.create(), orientation, before);
-			const camera = this.viewer.projectionOrientation;
-			quat.multiply(camera.orientation, turn, camera.orientation);
-			camera.changed.dispatch();
 		};
 		// The classes are what CSS tilts the two arrows by, each towards the way it
 		// turns.

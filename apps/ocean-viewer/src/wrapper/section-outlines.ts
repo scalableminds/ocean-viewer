@@ -27,6 +27,7 @@ import type { ProjectionParameters } from "neuroglancer/unstable/projection_para
 import type { WatchableValueInterface } from "neuroglancer/unstable/trackable_value.js";
 import { type quat, vec3, vec4 } from "neuroglancer/unstable/util/geom.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
+import { isPerspectivePanel } from "./panels.js";
 import { sectionColorOf } from "./viewport-labels.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -154,7 +155,8 @@ export class SectionOutlines {
 			}
 		}
 		for (const panel of panels) {
-			if (!this.isPerspectivePanel(panel) || this.overlays.has(panel)) continue;
+			if (!isPerspectivePanel(this.viewer, panel) || this.overlays.has(panel))
+				continue;
 			const overlay = document.createElementNS(SVG_NS, "svg");
 			overlay.setAttribute("class", OVERLAY_CLASS);
 			panel.element.appendChild(overlay);
@@ -350,17 +352,5 @@ export class SectionOutlines {
 			halfSize[i] = (upper - lower) / 2;
 		}
 		return { center, halfSize };
-	}
-
-	/**
-	 * Identify the 3D panel by the input bindings it was wired with, as in
-	 * `viewport-controls.ts` — a layer group hands each panel a linked copy of
-	 * its navigation state, but the event maps pass through as-is.
-	 */
-	private isPerspectivePanel(panel: RenderedPanel): boolean {
-		return (
-			(panel as RenderedPanel & { inputEventMap?: unknown }).inputEventMap ===
-			this.viewer.inputEventBindings.perspectiveView
-		);
 	}
 }
