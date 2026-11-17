@@ -6,8 +6,9 @@
  *
  * On the 3D panel, for getting back to a known view after a left-drag:
  *
- *   ⌂   reset — the XY section's orientation plus the zoom the CONFIG asked
- *       for, or, when it named none, one recomputed to fit the data
+ *   ⌂   reset — an oblique view from the south ({@link HOME_VIEW}) plus the
+ *       zoom the CONFIG asked for, or, when it named none, one recomputed to
+ *       fit the data
  *   XY  ·  XZ  ·  YZ — align the camera with that cross-section
  *
  * Only the orientation (and, for ⌂, the zoom) is touched — the perspective
@@ -33,6 +34,7 @@ import type { RenderedDataPanel } from "neuroglancer/unstable/rendered_data_pane
 import { kAxes, quat } from "neuroglancer/unstable/util/geom.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
 import { isPerspectivePanel, relativeToPose } from "./panels.js";
+import { HOME_VIEW, uprightView } from "./upright-camera.js";
 
 const CONTROLS_CLASS = "ocean-viewport-controls";
 
@@ -101,8 +103,10 @@ const ROTATION_STEP_DEGREES = 15;
 export const OVERLAY_ATTRIBUTE = "data-ocean-overlay";
 
 /**
- * Camera orientations relative to the XY section, matching Neuroglancer's own
- * `AXES_RELATIVE_ORIENTATION`. `xy` is the identity quaternion.
+ * Camera orientations relative to the XY section, each looking straight at
+ * that section with elevation up the screen (`upright-camera.ts`). XY and XZ
+ * match Neuroglancer's own `AXES_RELATIVE_ORIENTATION`; YZ is that one turned
+ * a quarter about its view axis, so depth runs down rather than across.
  */
 const AXIS_VIEWS: ReadonlyArray<{
 	label: string;
@@ -112,17 +116,17 @@ const AXIS_VIEWS: ReadonlyArray<{
 	{
 		label: "XY",
 		title: "Align camera with the XY section (top-down)",
-		target: quat.create(),
+		target: uprightView(0, 0),
 	},
 	{
 		label: "XZ",
 		title: "Align camera with the XZ section",
-		target: quat.rotateX(quat.create(), quat.create(), Math.PI / 2),
+		target: uprightView(0, Math.PI / 2),
 	},
 	{
 		label: "YZ",
 		title: "Align camera with the YZ section",
-		target: quat.rotateY(quat.create(), quat.create(), Math.PI / 2),
+		target: uprightView(Math.PI / 2, Math.PI / 2),
 	},
 ];
 
@@ -415,7 +419,7 @@ export class ViewportControls {
 				"Reset the 3D camera (orientation and zoom)",
 				() => {
 					const { zoomFactor } = this.viewer.perspectiveNavigationState;
-					this.alignCamera(quat.create());
+					this.alignCamera(HOME_VIEW);
 					const configured = this.configuredZoom();
 					if (configured === undefined) {
 						// Sets the value to NaN, so the next read recomputes the default zoom.

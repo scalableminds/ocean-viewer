@@ -22,6 +22,7 @@ import {
 	swapWheelBindings,
 } from "./input-bindings.js";
 import { THREE_PANEL_LAYOUT } from "./three-panel-layout.js";
+import { HOME_VIEW } from "./upright-camera.js";
 
 /** Fallback when the layout being normalised doesn't name a type itself. */
 const DEFAULT_LAYOUT_TYPE = THREE_PANEL_LAYOUT;
@@ -59,6 +60,8 @@ export function createViewer(target: HTMLElement): Viewer {
 		// The yellow outline Neuroglancer draws around the dataset bounds
 		showDefaultAnnotations: false,
 		layout: withOrthographicDefault(THREE_PANEL_LAYOUT),
+		// Oblique and elevation-up, as ⌂ restores it (`upright-camera.ts`).
+		projectionOrientation: Array.from(HOME_VIEW),
 	});
 
 	// @ts-expect-error: Expose the viewer globally for debugging
