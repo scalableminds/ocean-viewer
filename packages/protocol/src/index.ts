@@ -171,6 +171,10 @@ export interface ViewerStateJson {
 	crossSectionOrientation?: [number, number, number, number];
 	crossSectionScale?: number;
 	crossSectionDepth?: number;
+	/**
+	 * The 3D camera. A full CONFIG without it gets the viewer's oblique home
+	 * view; `[0, 0, 0, 1]` is top-down. REPORTs always include it.
+	 */
 	projectionOrientation?: [number, number, number, number];
 	projectionScale?: number;
 	projectionDepth?: number;

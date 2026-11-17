@@ -9,6 +9,7 @@
  * unchanged state and stays silent; genuine user edits differ and get reported.
  */
 
+import type { ViewerStateJson } from "@ocean-viewer/protocol";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
 
 import type { Bridge } from "./bridge.js";
@@ -37,8 +38,14 @@ export class Reporter {
 		this.lastSerialized = this.serialize();
 	}
 
+	/**
+	 * Always names `projectionOrientation`: Neuroglancer omits an identity
+	 * (top-down) camera, but a full CONFIG without one gets the home view.
+	 */
 	private serialize(): string {
-		return JSON.stringify(this.viewer.state.toJSON());
+		const state = this.viewer.state.toJSON() as ViewerStateJson;
+		state.projectionOrientation ??= [0, 0, 0, 1];
+		return JSON.stringify(state);
 	}
 
 	private readonly schedule = (): void => {
