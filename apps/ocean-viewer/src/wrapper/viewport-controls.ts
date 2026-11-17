@@ -184,7 +184,7 @@ export class ViewportControls {
 				continue;
 			}
 			if (isPerspectivePanel(this.viewer, panel)) {
-				panel.element.appendChild(this.buildCameraControls());
+				panel.element.appendChild(this.buildCameraControls(panel));
 			} else {
 				const controls = this.buildCrossSectionControls(panel);
 				if (controls !== undefined) panel.element.appendChild(controls);
@@ -406,7 +406,7 @@ export class ViewportControls {
 		);
 	}
 
-	private buildCameraControls(): HTMLElement {
+	private buildCameraControls(panel: RenderedDataPanel): HTMLElement {
 		const root = this.cluster();
 
 		root.appendChild(
@@ -414,7 +414,9 @@ export class ViewportControls {
 				"⌂",
 				"Reset the 3D camera (orientation and zoom)",
 				() => {
-					const { zoomFactor } = this.viewer.perspectiveNavigationState;
+					// The panel's own zoom, on undamped scales (`three-panel-layout.ts`):
+					// the fit-the-data default then ignores the 2D zoom damping.
+					const { zoomFactor } = panel.navigationState;
 					this.alignCamera(quat.create());
 					const configured = this.configuredZoom();
 					if (configured === undefined) {
