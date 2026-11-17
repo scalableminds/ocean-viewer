@@ -9,12 +9,41 @@
  * Neuroglancer, 1 holds the axis still on screen. The anchor is the zoom in
  * force when a CONFIG last changed the base or damping.
  *
+ * Damping only suits the cross-sections, so the 3D panel gets its own copy of
+ * the factors with the base alone (`projectionDisplayScales`); see
+ * `three-panel-layout.ts`.
+ *
  * Factors are kept by NAME and re-applied on every coordinate-space change:
  * Neuroglancer keys them by dimension id and re-maps by id, so they fall back
  * to 1 whenever the space is re-derived from the sources' `outputDimensions`.
  */
 
+import type { CoordinateSpace } from "neuroglancer/unstable/coordinate_transform.js";
+import { TrackableRelativeDisplayScales } from "neuroglancer/unstable/navigation_state.js";
+import type { WatchableValueInterface } from "neuroglancer/unstable/trackable_value.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
+
+/** Undamped factors for the 3D panel, one per viewer coordinate space. */
+const projectionScales = new WeakMap<
+	WatchableValueInterface<CoordinateSpace>,
+	TrackableRelativeDisplayScales
+>();
+
+/**
+ * The display scales the 3D panel renders with: the base factors without
+ * damping. Created on first use, since the layout can ask before the CONFIG
+ * side exists.
+ */
+export function projectionDisplayScales(
+	coordinateSpace: WatchableValueInterface<CoordinateSpace>,
+): TrackableRelativeDisplayScales {
+	let scales = projectionScales.get(coordinateSpace);
+	if (scales === undefined) {
+		scales = new TrackableRelativeDisplayScales(coordinateSpace);
+		projectionScales.set(coordinateSpace, scales);
+	}
+	return scales;
+}
 
 /** Sanity bounds only. */
 const MIN_FACTOR = 1e-3;
@@ -27,8 +56,10 @@ export class DisplayScales {
 	/** Zoom at which `base` holds exactly; unset until the zoom is valid. */
 	private anchorZoom: number | undefined;
 	private applying = false;
+	private readonly projection: TrackableRelativeDisplayScales;
 
 	constructor(private readonly viewer: Viewer) {
+		this.projection = projectionDisplayScales(viewer.coordinateSpace);
 		viewer.coordinateSpace.changed.add(() => {
 			this.apply();
 		});
@@ -72,21 +103,13 @@ export class DisplayScales {
 		if (this.applying) return;
 		const { names, rank } = this.viewer.coordinateSpace.value;
 		if (rank === 0) return;
-		const { relativeDisplayScales } = this.viewer;
-		const current = relativeDisplayScales.value.factors;
-		if (current.length !== rank) return;
-
 		const ratio = this.zoomRatio();
-		const factors = new Float64Array(rank);
-		let differs = false;
-		for (let i = 0; i < rank; ++i) {
-			factors[i] = this.factorFor(names[i], ratio);
-			if (factors[i] !== current[i]) differs = true;
-		}
-		if (!differs) return;
 		this.applying = true;
 		try {
-			relativeDisplayScales.setFactors(factors);
+			assignFactors(this.viewer.relativeDisplayScales, rank, (i) =>
+				this.factorFor(names[i], ratio),
+			);
+			assignFactors(this.projection, rank, (i) => this.factorFor(names[i], 1));
 		} finally {
 			this.applying = false;
 		}
@@ -117,6 +140,23 @@ export class DisplayScales {
 				: base * ratio ** damping;
 		return Math.min(MAX_FACTOR, Math.max(MIN_FACTOR, factor));
 	}
+}
+
+/** Set `scales` to `factorAt(i)`, unless that's what it already holds. */
+function assignFactors(
+	scales: TrackableRelativeDisplayScales,
+	rank: number,
+	factorAt: (i: number) => number,
+): void {
+	const current = scales.value.factors;
+	if (current.length !== rank) return;
+	const factors = new Float64Array(rank);
+	let differs = false;
+	for (let i = 0; i < rank; ++i) {
+		factors[i] = factorAt(i);
+		if (factors[i] !== current[i]) differs = true;
+	}
+	if (differs) scales.setFactors(factors);
 }
 
 function positive(value: number | undefined): number | undefined {
