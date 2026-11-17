@@ -12,6 +12,10 @@
  * `r` / `e` spin the same way. The two-finger twist, which would roll, is
  * unbound in `input-bindings.ts`.
  *
+ * Near top-down, spinning would only turn the map on screen, so the map is
+ * held north-up there instead: within {@link PLAN_TILT} of straight down,
+ * spins are ignored and tilting further down unwinds the yaw to 0.
+ *
  * World axes run east, south and down (+z is deeper), and Neuroglancer's
  * screen-down is the camera's +y. The camera's state is a yaw and a tilt
  * relative to the cross-section pose `p`: the camera is always
@@ -45,6 +49,9 @@ const KEY_STEP = 0.1;
  * right-hand axis instead.
  */
 const NEAR_VERTICAL = 0.1;
+
+/** How far off straight down the map is still held north-up: 10°. */
+const PLAN_TILT = Math.PI / 18;
 
 /** Slack for float32 round-off before a camera counts as changed. */
 const QUAT_EPSILON = 1e-6;
@@ -108,6 +115,7 @@ export class UprightCamera {
 		const panel = this.perspectivePanelOf(event);
 		if (panel === undefined) return;
 		event.stopPropagation();
+		if (this.tilt < PLAN_TILT) return;
 		panel.context.flagContinuousCameraMotion();
 		this.yaw += sign * KEY_STEP;
 		this.follow();
@@ -115,12 +123,19 @@ export class UprightCamera {
 
 	/**
 	 * A drag: spin about the elevation axis, tilt about the camera's own
-	 * right-hand axis — together, a step in yaw and tilt.
+	 * right-hand axis — together, a step in yaw and tilt. Near top-down the map
+	 * is held north-up instead; see the module doc.
 	 */
 	private turn(panel: RenderedDataPanel, deltaX: number, deltaY: number): void {
 		panel.context.flagContinuousCameraMotion();
-		this.yaw += deltaX * RADIANS_PER_PIXEL;
+		if (this.tilt >= PLAN_TILT) this.yaw += deltaX * RADIANS_PER_PIXEL;
+		const from = Math.min(this.tilt, PLAN_TILT);
 		this.tilt = clamp(this.tilt - deltaY * RADIANS_PER_PIXEL, 0, Math.PI);
+		// Shrink the yaw with the tilt, so it is 0 by the time the view is
+		// straight down. The shorter way round, so it never spins a full turn.
+		if (this.tilt < from) {
+			this.yaw = wrapAngle(this.yaw) * (this.tilt / from);
+		}
 		this.follow();
 	}
 
@@ -220,10 +235,31 @@ export function uprightView(
 /** The default 3D view: from the south, 60° off straight down. */
 export const HOME_VIEW: quat = uprightView(0, Math.PI / 3);
 
+/**
+ * Turn the 3D camera to `relative` from the XY section, so it keeps matching
+ * the cross-sections after ↺ / ↻ turned the data.
+ */
+export function alignCamera(viewer: Viewer, relative: quat): void {
+	// `orientation` is a live gl-matrix quat that nothing observes, so the
+	// dispatch has to be explicit.
+	const camera = viewer.projectionOrientation;
+	quat.multiply(
+		camera.orientation,
+		viewer.navigationState.pose.orientation.orientation,
+		relative,
+	);
+	camera.changed.dispatch();
+}
+
 /** Scratch for the listeners, which run on every camera and pose change. */
 const scratchQuat = quat.create();
 const scratchView = vec3.create();
 const scratchRight = vec3.create();
+
+/** `angle` in (-π, π]. */
+function wrapAngle(angle: number): number {
+	return angle - 2 * Math.PI * Math.ceil((angle - Math.PI) / (2 * Math.PI));
+}
 
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));

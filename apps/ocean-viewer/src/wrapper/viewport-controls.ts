@@ -34,7 +34,7 @@ import type { RenderedDataPanel } from "neuroglancer/unstable/rendered_data_pane
 import { kAxes, quat } from "neuroglancer/unstable/util/geom.js";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
 import { isPerspectivePanel, relativeToPose } from "./panels.js";
-import { HOME_VIEW, uprightView } from "./upright-camera.js";
+import { alignCamera, HOME_VIEW, uprightView } from "./upright-camera.js";
 
 const CONTROLS_CLASS = "ocean-viewport-controls";
 
@@ -419,7 +419,7 @@ export class ViewportControls {
 				"Reset the 3D camera (orientation and zoom)",
 				() => {
 					const { zoomFactor } = this.viewer.perspectiveNavigationState;
-					this.alignCamera(HOME_VIEW);
+					alignCamera(this.viewer, HOME_VIEW);
 					const configured = this.configuredZoom();
 					if (configured === undefined) {
 						// Sets the value to NaN, so the next read recomputes the default zoom.
@@ -434,27 +434,11 @@ export class ViewportControls {
 
 		for (const { label, title, target } of AXIS_VIEWS) {
 			root.appendChild(
-				this.button(label, title, () => this.alignCamera(target)),
+				this.button(label, title, () => alignCamera(this.viewer, target)),
 			);
 		}
 
 		return root;
-	}
-
-	/**
-	 * Turn the 3D camera to `relative` from the XY section, so it keeps matching
-	 * the cross-sections after ↺ / ↻ turned the data.
-	 */
-	private alignCamera(relative: quat): void {
-		// `orientation` is a live gl-matrix quat that nothing observes, so the
-		// dispatch has to be explicit.
-		const camera = this.viewer.projectionOrientation;
-		quat.multiply(
-			camera.orientation,
-			this.viewer.navigationState.pose.orientation.orientation,
-			relative,
-		);
-		camera.changed.dispatch();
 	}
 
 	/**

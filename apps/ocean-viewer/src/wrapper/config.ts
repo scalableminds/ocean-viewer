@@ -11,6 +11,9 @@
  *   - partial : merge `state` onto the current state, preserving camera
  *               position/orientation/zoom unless the partial names them.
  *
+ * A full config without `projectionOrientation` gets the home view relative to
+ * its pose, as ⌂ does; so does the viewer before any config arrives.
+ *
  * Also remembers the 3D zoom the latest config asked for, which the ⌂ button in
  * `viewport-controls.ts` restores to in place of Neuroglancer's own default.
  */
@@ -19,6 +22,7 @@ import { resolveStateColormaps } from "@ocean-viewer/colormaps/shader";
 import type { ConfigMessage, ViewerStateJson } from "@ocean-viewer/protocol";
 import type { Viewer } from "neuroglancer/unstable/viewer.js";
 import { DisplayScales } from "./display-scales.js";
+import { alignCamera, HOME_VIEW } from "./upright-camera.js";
 import { withOrthographicDefault } from "./viewer.js";
 
 const PRESERVED_CAMERA_KEYS: ReadonlyArray<keyof ViewerStateJson> = [
@@ -53,6 +57,7 @@ export class ConfigApplier {
 	constructor(private readonly viewer: Viewer) {
 		this.pristine = viewer.state.toJSON() as ViewerStateJson;
 		this.displayScales = new DisplayScales(viewer);
+		alignCamera(viewer, HOME_VIEW);
 	}
 
 	apply(message: ConfigMessage): void {
@@ -70,6 +75,9 @@ export class ConfigApplier {
 		try {
 			if (mode === "full") {
 				this.viewer.state.restoreState({ ...this.pristine, ...state });
+				if (state.projectionOrientation === undefined) {
+					alignCamera(this.viewer, HOME_VIEW);
+				}
 				this.hasReceivedFull = true;
 				this.configuredProjectionScale = state.projectionScale;
 			} else {
